@@ -9,12 +9,14 @@ on:
       - 'helm/**'
       - 'compose/**'
       - 'scripts/**'
+      - '.env.remote-e2e.example'
       - '.github/workflows/chart-release.yml'
   pull_request:
     paths:
       - 'helm/**'
       - 'compose/**'
       - 'scripts/**'
+      - '.env.remote-e2e.example'
       - '.github/workflows/chart-release.yml'
   workflow_dispatch:
 permissions:
