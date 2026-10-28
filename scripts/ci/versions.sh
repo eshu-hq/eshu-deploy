@@ -5,15 +5,16 @@
 #
 # CI (.github/workflows/ci.yml) and local runs (make ci) source this file, so
 # both judge with the same tool versions. Action pins (checkout, paths-filter,
-# setup-python, setup-helm, action-shellcheck) live in the workflow with a
+# setup-python, setup-helm) live in the workflow with a
 # version comment next to each SHA; tool pins live here. Re-verify every pin
 # with git ls-remote (actions) or the publisher checksum file (tarballs) when
 # auditing; Dependabot proposes action bumps, weekly grouped.
 #
-# Note on shellcheck: no publisher checksum file exists for koalaman
-# tarballs, so the lint lane uses the pinned ludeeus/action-shellcheck action
-# in CI and a PATH shellcheck locally (CONTRIBUTING.md lists the install).
-# Both must pass.
+# Note: koalaman publishes no checksum file, so the sha256 below is
+# self-measured from the upstream tarball (pins the exact bits; a silent
+# upstream re-roll fails the check). Same build the kit lane pins.
+SHELLCHECK_VERSION="0.11.0"
+SHELLCHECK_SHA256="8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
 set -euo pipefail
 
 # yamllint via pip (CI installs it with setup-python; local: pip install).
