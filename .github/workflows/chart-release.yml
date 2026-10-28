@@ -38,6 +38,8 @@ jobs:
         run: helm lint ${{ env.CHART_PATH }}
       - name: Render chart
         run: helm template eshu ${{ env.CHART_PATH }} --namespace eshu > /tmp/eshu-deploy-render.yaml
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Verify Compose/Helm runtime parity
         run: bash scripts/verify-compose-helm-runtime-parity.sh
   package-and-push-chart:

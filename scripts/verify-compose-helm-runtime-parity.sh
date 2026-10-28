@@ -29,6 +29,7 @@ done
 cd "${repo_root}"
 command -v docker >/dev/null 2>&1 || { printf 'docker compose is required\n' >&2; exit 1; }
 command -v helm >/dev/null 2>&1 || { printf 'helm is required\n' >&2; exit 1; }
+command -v rg >/dev/null 2>&1 || { printf 'ripgrep (rg) is required\n' >&2; exit 1; }
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "${tmp_dir}" 2>/dev/null || true' EXIT
