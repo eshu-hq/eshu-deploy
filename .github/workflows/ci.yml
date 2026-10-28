@@ -1,0 +1,211 @@
+# CI gates for eshu-deploy.
+#
+# Path-aware lanes behind stable job names: one `changes` job
+# (dorny/paths-filter) maps touched paths to lanes, each lane runs only when
+# a PR can affect it, and `ci-complete` is the only required context (it
+# fails when a needed lane failed and passes when lanes were legitimately
+# skipped, so docs-only PRs merge with no lane runs). Pushes to main and the
+# weekly schedule run every lane. Lane bodies live in scripts/ci/*.sh, which
+# `make ci` also calls, so local runs judge with the same validators.
+#
+# Pinned actions (re-verify with git ls-remote when auditing; Dependabot
+# github-actions proposes bumps, weekly grouped):
+#   actions/checkout v7.0.1              3d3c42e5aac5ba805825da76410c181273ba90b1
+#   dorny/paths-filter v4.0.3            ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d
+#   actions/setup-python v6.3.0          ece7cb06caefa5fff74198d8649806c4678c61a1
+#   azure/setup-helm v5.0.0              dda3372f752e03dde6b3237bc9431cdc2f7a02a2
+# Pinned tools (versions, tarball hashes, schema commit) live in
+# scripts/ci/versions.sh, shared by CI and make ci.
+#
+# Fork safety: top-level permissions stay empty, PR lanes use a read-only
+# token and no secrets, actions pin by SHA, per-PR runs cancel superseded
+# runs, and every job sets a timeout.
+name: ci
+
+"on":
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      charts: ${{ steps.filter.outputs.charts }}
+      compose: ${{ steps.filter.outputs.compose }}
+      manifests: ${{ steps.filter.outputs.manifests }}
+      shell: ${{ steps.filter.outputs.shell }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      misc: ${{ steps.filter.outputs.misc }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          predicate-quantifier: 'some-with-excludes'
+          filters: |
+            charts:
+              - 'charts/**'
+              - 'helm/**'
+            compose:
+              - 'compose/**'
+              - 'docker-compose*.y*ml'
+            manifests:
+              - 'manifests/**'
+              - 'gitops/**'
+              - 'examples/**'
+            shell:
+              - '**/*.sh'
+            workflows:
+              - '.github/workflows/**'
+            misc:
+              - '**'
+              - '!**/*.md'
+              - '!LICENSE'
+              - '!charts/**'
+              - '!helm/**'
+              - '!compose/**'
+              - '!docker-compose*.y*ml'
+              - '!manifests/**'
+              - '!gitops/**'
+              - '!examples/**'
+              - '!**/*.sh'
+              - '!.github/workflows/**'
+
+  lint:
+    # YAML lint/format, actionlint, shellcheck. Runs on any content change;
+    # docs-only PRs skip every lane and ci-complete still passes.
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.charts == 'true' || needs.changes.outputs.compose == 'true' || needs.changes.outputs.manifests == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.misc == 'true' }}
+    needs: [changes]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.13"
+      - name: install yamllint (pinned) and shellcheck
+        run: |
+          # shellcheck disable=SC1094
+          # SC1094: versions.sh resolves at lane runtime from the repo root,
+          # which actionlint's static shellcheck cannot see. Single source of
+          # the pin stays scripts/ci/versions.sh.
+          . scripts/ci/versions.sh
+          pip install "yamllint==${YAMLLINT_VERSION}"
+          sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: lint
+        run: bash scripts/ci/lint.sh
+
+  charts:
+    # helm lint plus a helm template render check per values set.
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.charts == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.misc == 'true' }}
+    needs: [changes]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2  # v5.0.0
+        with:
+          version: v4.2.3
+      - name: charts
+        run: bash scripts/ci/charts.sh
+
+  compose:
+    # docker compose config per documented invocation (standalone stacks,
+    # overlays on their bases, remote E2E entrypoint with the example env).
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.compose == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.misc == 'true' }}
+    needs: [changes]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: compose
+        run: bash scripts/ci/compose.sh
+
+  manifests:
+    # kustomize builds, helm renders, kubeconform -strict against
+    # commit-pinned schemas. No cluster.
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.manifests == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.misc == 'true' }}
+    needs: [changes]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2  # v5.0.0
+        with:
+          version: v4.2.3
+      - name: manifests
+        run: bash scripts/ci/manifests.sh
+
+  ci-complete:
+    needs: [changes, lint, charts, compose, manifests]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: aggregate (pass when needed lanes passed or legitimately skipped)
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          # NEEDS_JSON is toJSON(needs): {job: {"result": ..., "outputs": ...}}.
+          # NOTE: comparing whole job OBJECTS to "failure" never matches
+          # (false-green); expanding needs.*.result gives a bare ARRAY that
+          # kills green runs on AttributeError. Compare v["result"] instead.
+          # Never change this shape without a seeded red proof.
+          needs = json.loads(os.environ["NEEDS_JSON"])
+          bad = {k: v.get("result") for k, v in needs.items()
+                 if isinstance(v, dict) and v.get("result") in ("failure", "cancelled")}
+          if bad:
+              print("FAIL:", bad)
+              raise SystemExit(1)
+          print("ci-complete: pass (skips allowed)")
+          EOF
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+
+  scheduled-findings:
+    # The lanes run read-only, so weekly issue filing stays a caller job.
+    # Fires only when a lane failed on a schedule event.
+    needs: [ci-complete]
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: file or update the weekly findings issue
+        run: |
+          title="[ci] weekly lane findings $(date -u +%F)"
+          body="Scheduled ci lanes failed on ${{ github.sha }}. See run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          open=$(gh issue list --search "$title in:title" --state open --json number --jq '.[0].number')
+          if [ -n "$open" ] && [ "$open" != "null" ]; then
+            gh issue comment "$open" --body "$body"
+          else
+            gh issue create --title "$title" --label bug --body "$body"
+          fi
