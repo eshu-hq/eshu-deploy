@@ -1,0 +1,68 @@
+name: Chart release
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'helm-eshu-v*'
+    paths:
+      - 'helm/**'
+      - 'compose/**'
+      - 'scripts/**'
+      - '.github/workflows/chart-release.yml'
+  pull_request:
+    paths:
+      - 'helm/**'
+      - 'compose/**'
+      - 'scripts/**'
+      - '.github/workflows/chart-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  CHART_PATH: helm/eshu
+  CHART_REGISTRY: oci://ghcr.io/${{ github.repository_owner }}/charts
+  REGISTRY: ghcr.io
+jobs:
+  lint-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Set up Helm
+        uses: azure/setup-helm@v5.0.0
+        with:
+          version: v4.2.3
+      - name: Lint Helm chart
+        run: helm lint ${{ env.CHART_PATH }}
+      - name: Render chart
+        run: helm template eshu ${{ env.CHART_PATH }} --namespace eshu > /tmp/eshu-deploy-render.yaml
+      - name: Verify Compose/Helm runtime parity
+        run: bash scripts/verify-compose-helm-runtime-parity.sh
+  package-and-push-chart:
+    needs: [lint-and-verify]
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Set up Helm
+        uses: azure/setup-helm@v5.0.0
+        with:
+          version: v4.2.3
+      - name: Package Helm chart
+        run: mkdir -p dist && helm package ${{ env.CHART_PATH }} --destination dist
+      # Chart versions are immutable: a published version is never
+      # overwritten (scripts/ci/push-helm-chart.sh treats a byte-identical
+      # duplicate push as success and refuses a conflicting one), and this
+      # repository moves no tags. Rollback restores a prior chart version in
+      # configuration; it never rewrites a release.
+      - name: Push Helm chart to GHCR
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/ci/push-helm-chart.sh
