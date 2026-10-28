@@ -101,7 +101,7 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: "3.13"
-      - name: install yamllint (pinned) and shellcheck
+      - name: install yamllint (pinned) and shellcheck (pinned)
         run: |
           # shellcheck disable=SC1094
           # SC1094: versions.sh resolves at lane runtime from the repo root,
@@ -109,7 +109,10 @@ jobs:
           # the pin stays scripts/ci/versions.sh.
           . scripts/ci/versions.sh
           pip install "yamllint==${YAMLLINT_VERSION}"
-          sudo apt-get update && sudo apt-get install -y shellcheck
+          curl -sL -o /tmp/shellcheck.tar.xz \
+            "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          printf '%s  /tmp/shellcheck.tar.xz\n' "${SHELLCHECK_SHA256}" | sha256sum -c -
+          sudo tar -xf /tmp/shellcheck.tar.xz -C /usr/local/bin --strip-components=1 "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
       - name: lint
         run: bash scripts/ci/lint.sh
 
