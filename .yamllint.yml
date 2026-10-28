@@ -1,0 +1,19 @@
+# YAML lint/format gate for eshu-deploy (lint lane + `make ci-lint`).
+#
+# Scope: every **/*.yaml|yml EXCEPT helm/eshu/templates/**. Those templates
+# mix Go template directives with YAML and do not parse as YAML; helm lint,
+# helm template, and kubeconform judge them instead (charts/manifests lanes).
+# The exclusion is reasoned here, not a parity gap: a validator still reads
+# every excluded file.
+extends: default
+ignore: |
+  helm/eshu/templates/**
+rules:
+  # Long scalar lines (image digests, JSON env blobs) are content, not style
+  # regressions: editors and diffs do not wrap them, and the schema, render,
+  # and config validators judge their meaning. Length alone never fails.
+  line-length: disable
+  # The seeded tree omits `---` document markers throughout by convention;
+  # their absence changes no meaning, and adding them to every file would be
+  # churn. Structure and content are judged by the rules that stay on.
+  document-start: disable
