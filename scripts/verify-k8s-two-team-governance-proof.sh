@@ -24,7 +24,6 @@ set -euo pipefail
 # cluster (scripts/run-k8s-two-team-governance-proof.sh) is the operator/CI gate.
 # Artifacts carry counts and HTTP states only, never response bodies.
 
-repo_root="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "$0")/.." && pwd))"
 list_only=false
 artifacts_dir=""
 readonly expected_backend_image="ghcr.io/eshu-hq/nornicdb-amd64-cpu:fix-500-e022384c@sha256:74a8ed7b36f37bdd1a7e32d8bc6aa3fa88908b7207bfa6568567ab94e4a4b3b1"
