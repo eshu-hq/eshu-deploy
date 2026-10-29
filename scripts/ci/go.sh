@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# go lane: gofmt, go vet, and the Go contract test suite.
+# go lane: gofmt, go vet, go mod tidy drift check, govulncheck, and the
+# Go contract test suite. Requires helm on PATH: the suite skips
+# helm-dependent tests when it is absent, so CI provisions it pinned.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -22,6 +24,9 @@ if [ ! -x "${go_root}/bin/go" ]; then
 fi
 export PATH="${go_root}/bin:${PATH}"
 export GOTOOLCHAIN=local
+# An ambient GOROOT (e.g. mise shims) mixes its stdlib with the pinned
+# toolchain and breaks the build; the lane is hermetic.
+unset GOROOT
 # No -mod=mod: the Go default (-mod=readonly) must hold so this lane fails
 # when go.mod/go.sum drift from the imports instead of silently repairing
 # them in-worktree. (Locally a warm module cache masks the difference;
@@ -33,6 +38,18 @@ printf 'go: gofmt (no output below means clean)\n'
 test -z "$(gofmt -l go/)"
 printf 'go: go vet\n'
 go vet ./go/...
+printf 'go: go mod tidy -diff (fails on drift, repairs nothing)\n'
+go mod tidy -diff
+# Keyed by version: a pin bump must install the new binary instead of
+# reusing a stale cached one.
+vuln_bin="${tools_dir}/govulncheck-${GOVULNCHECK_VERSION}"
+if [ ! -x "${vuln_bin}" ]; then
+  printf 'go: installing govulncheck %s\n' "${GOVULNCHECK_VERSION}"
+  GOBIN="${tools_dir}" go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
+  mv "${tools_dir}/govulncheck" "${vuln_bin}"
+fi
+printf 'go: govulncheck\n'
+"${vuln_bin}" ./go/...
 printf 'go: go test\n'
 go test ./go/... -count=1
 printf 'go: pass\n'

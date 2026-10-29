@@ -34,6 +34,10 @@ KUBECTL_SHA256=9591f3d75e1581f3f7392e6ad119aab2f28ae7d6c6e083dc5d22469667f27253
 SCHEMA_COMMIT=89a35a5e9a1412a692a2603d79c3786f602238a4
 # Helm tool version (matches the chart-release lane).
 HELM_VERSION=v4.2.3
+# govulncheck, installed by the go lane via `go install ...@version`
+# (module-proxy + checksum-DB verified). Matches the version the org
+# Go reusable pins.
+GOVULNCHECK_VERSION=v1.9.0
 # Go toolchain tarball, sha256-checked on download (go.dev/dl publishes the
 # checksum in its release JSON; re-verify there when auditing).
 GO_VERSION=1.26.10
