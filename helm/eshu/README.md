@@ -41,8 +41,8 @@ guidance belong in the public Kubernetes docs.
 - The `argocdPreSync` switch (default off, enabled in the QA overlay first)
   reuses the schema-bootstrap Job as an ArgoCD PreSync hook at a negative
   sync wave; it is mutually exclusive with `useHelmHooks` because ArgoCD also
-  processes `helm.sh/hook` annotations. Keep the 600 s chart deadline default
-  short and set at least 3600 s in environment overlays.
+  processes `helm.sh/hook` annotations. Keep the 3600 s chart deadline default
+  and set at least 3600 s in environment overlays.
 - The render-safe chart defaults select external Neo4j. Any enabled workload
   whose effective environment selects `ESHU_GRAPH_BACKEND=nornicdb` fails closed unless
   `nornicdb.capabilities.relationshipMergePropertyIdentity=true`, including
