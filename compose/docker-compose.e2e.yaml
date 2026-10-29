@@ -38,8 +38,10 @@
 # mcp-server, plus neo4j from docker-compose.neo4j.yml) are pulled in via `extends`, mirroring docker-compose.demo.corpus.yaml /
 # docker-compose.demo.runtime.yaml. `extends` merges `environment` per key
 # (overrides here win) and fully replaces `ports`/`volumes` when redeclared;
-# `docker compose -f docker-compose.e2e.yaml config` is the way to check the
-# rendered result after editing this file.
+# `export ESHU_DEPLOY_CHECKOUT="$(git rev-parse --show-toplevel)" &&
+# docker compose -f compose/docker-compose.e2e.yaml config` (from the
+# checkout root) is the way to check the rendered result after editing
+# this file.
 
 name: ${ESHU_E2E_PROJECT_NAME:-eshu-e2e}
 
@@ -58,7 +60,7 @@ x-e2e-runtime-env: &e2e_runtime_env
 services:
   neo4j:
     extends:
-      file: docker-compose.neo4j.yml
+      file: ${ESHU_DEPLOY_CHECKOUT}/compose/docker-compose.neo4j.yml
       service: neo4j
     ports: !reset []
     volumes: !override
@@ -74,7 +76,7 @@ services:
 
   postgres:
     extends:
-      file: docker-compose.yaml
+      file: ${ESHU_DEPLOY_CHECKOUT}/compose/docker-compose.yaml
       service: postgres
     ports: !override
       - "${ESHU_E2E_POSTGRES_PORT:-28432}:5432"
@@ -83,7 +85,7 @@ services:
 
   db-migrate:
     extends:
-      file: docker-compose.yaml
+      file: ${ESHU_DEPLOY_CHECKOUT}/compose/docker-compose.yaml
       service: db-migrate
     build:
       args:
@@ -100,7 +102,7 @@ services:
 
   workspace-setup:
     extends:
-      file: docker-compose.yaml
+      file: ${ESHU_DEPLOY_CHECKOUT}/compose/docker-compose.yaml
       service: workspace-setup
     build:
       args:
@@ -119,7 +121,7 @@ services:
   # depends_on the base eshu service declares; `extends` merges it in).
   eshu:
     extends:
-      file: docker-compose.yaml
+      file: ${ESHU_DEPLOY_CHECKOUT}/compose/docker-compose.yaml
       service: eshu
     build:
       args:
@@ -250,7 +252,7 @@ services:
   # Linux CI runner, so the same code path is what Phase 4's CI job will use.
   mock-oidc-idp:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
       target: mock-oidc-idp
       args:
@@ -279,7 +281,7 @@ services:
   # different host port and identity only.
   mock-oidc-idp-admin:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
       target: mock-oidc-idp
       args:
@@ -319,7 +321,7 @@ services:
   # issuer URL below.
   mcp-server:
     extends:
-      file: docker-compose.yaml
+      file: ${ESHU_DEPLOY_CHECKOUT}/compose/docker-compose.yaml
       service: mcp-server
     build:
       args:
@@ -370,7 +372,7 @@ services:
   # apps/console/e2e/authE2EOidcFlow.ts's chromiumLaunchArgs already builds.
   mock-github:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
       target: mock-github
       args:
