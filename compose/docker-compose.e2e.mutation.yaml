@@ -1,7 +1,8 @@
 # Mutation override for the MCP-identity E2E sensitivity gate (F-9, issue
 # #5170, design §5 "Sensitivity (mutation) proof"). Applied ON TOP of
-# docker-compose.e2e.yaml (docker compose -f docker-compose.e2e.yaml -f
-# docker-compose.e2e.mutation.yaml) to recreate ONLY the mcp-server with the
+# docker-compose.e2e.yaml (export ESHU_DEPLOY_CHECKOUT to the checkout root,
+# then docker compose -f compose/docker-compose.e2e.yaml -f
+# compose/docker-compose.e2e.mutation.yaml) to recreate ONLY the mcp-server with the
 # credential-source gate deliberately DISABLED, so the negative credential-less
 # leakage module — which passes (every probe 401s) against the real gate — now
 # FAILS (probes 200). scripts/verify-auth-mcp-e2e-sensitivity.sh asserts that

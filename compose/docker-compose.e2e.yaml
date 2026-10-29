@@ -38,8 +38,10 @@
 # mcp-server, plus neo4j from docker-compose.neo4j.yml) are pulled in via `extends`, mirroring docker-compose.demo.corpus.yaml /
 # docker-compose.demo.runtime.yaml. `extends` merges `environment` per key
 # (overrides here win) and fully replaces `ports`/`volumes` when redeclared;
-# `docker compose -f docker-compose.e2e.yaml config` is the way to check the
-# rendered result after editing this file.
+# `export ESHU_DEPLOY_CHECKOUT="$(git rev-parse --show-toplevel)" &&
+# docker compose -f compose/docker-compose.e2e.yaml config` (from the
+# checkout root) is the way to check the rendered result after editing
+# this file.
 
 name: ${ESHU_E2E_PROJECT_NAME:-eshu-e2e}
 
