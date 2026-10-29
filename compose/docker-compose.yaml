@@ -102,7 +102,7 @@ services:
 
   db-migrate:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     command: ["/usr/local/bin/eshu-bootstrap-data-plane"]
     healthcheck:
@@ -134,7 +134,7 @@ services:
 
   workspace-setup:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     user: "0:0"
     healthcheck:
@@ -160,7 +160,7 @@ services:
 
   bootstrap-index:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     healthcheck:
       disable: true
@@ -219,7 +219,7 @@ services:
 
   eshu:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     command: ["/usr/local/bin/eshu-api"]
     ports:
@@ -290,7 +290,7 @@ services:
 
   mcp-server:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     command: ["/usr/local/bin/eshu-mcp-server"]
     ports:
@@ -361,7 +361,7 @@ services:
 
   ingester:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
@@ -431,7 +431,7 @@ services:
     profiles:
       - workflow-coordinator
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     command: ["/usr/local/bin/eshu-workflow-coordinator"]
     healthcheck:
@@ -474,7 +474,7 @@ services:
     profiles:
       - component-extension-collector
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     command: ["/usr/local/bin/eshu-collector-component-extension"]
     healthcheck:
@@ -520,7 +520,7 @@ services:
   # ESHU_SHARED_PROJECTION_PARTITION_COUNT=8, ESHU_REDUCER_BATCH_CLAIM_SIZE=64
   resolution-engine:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     command: ["/usr/local/bin/eshu-reducer"]
     healthcheck:
@@ -599,7 +599,7 @@ services:
   # near the NornicDB throughput knee (#4728).
   projector:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-projector"]
@@ -658,7 +658,7 @@ services:
     profiles:
       - webhook-listener
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     command: ["/usr/local/bin/eshu-webhook-listener"]
     healthcheck:

@@ -14,6 +14,10 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${repo_root}"
 
+# The e2e stack's `extends:` entries anchor at the checkout so the same file
+# renders from any project directory (eshu CI drives it with its own root).
+export ESHU_DEPLOY_CHECKOUT="${ESHU_DEPLOY_CHECKOUT:-${repo_root}}"
+
 command -v docker >/dev/null 2>&1 || { printf 'compose: docker is required (see CONTRIBUTING.md)\n' >&2; exit 1; }
 
 check() {

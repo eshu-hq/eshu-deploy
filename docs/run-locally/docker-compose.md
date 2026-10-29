@@ -598,8 +598,17 @@ flow against a real OIDC counterparty with zero corpus and zero seeded local
 identities.
 
 ```bash
-docker compose -f docker-compose.e2e.yaml up -d --build --wait
+export ESHU_DEPLOY_CHECKOUT="$(git rev-parse --show-toplevel)"
+export ESHU_REPO_ROOT="$HOME/personal-repos/eshu"
+docker compose -f compose/docker-compose.e2e.yaml up -d --build --wait
 ```
+
+The `extends:` entries anchor at `$ESHU_DEPLOY_CHECKOUT` and service builds at
+`$ESHU_REPO_ROOT`, so the same file renders from any project directory and
+builds Eshu source from the Eshu checkout. Export both (absolute paths)
+before any direct `docker compose -f compose/...` invocation; `compose.sh`
+exports `ESHU_DEPLOY_CHECKOUT` for the render lane (builds only run where an
+Eshu checkout provides `ESHU_REPO_ROOT`).
 
 The stack is standalone and defaults the Compose project to `eshu-e2e`.
 Reused services extend `docker-compose.yaml` (`neo4j` extends `docker-compose.neo4j.yml`);
