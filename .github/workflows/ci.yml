@@ -193,6 +193,12 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      # The contract suite shells out to helm and skips when it is absent:
+      # provision it pinned (same pin as the charts lane) so the lane can
+      # never go green on skips.
+      - uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2  # v5.0.0
+        with:
+          version: v4.2.3
       - name: go
         run: bash scripts/ci/go.sh
 
