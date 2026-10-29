@@ -145,8 +145,11 @@ if [[ "${do_build}" == true ]]; then
 		# explicit K8S_GOV_IMAGE_REPO/TAG (or flags) still win, and --no-build
 		# with a preloaded image keeps working.
 		if [[ "${image_repo}:${image_tag}" == "eshu:local" ]]; then
-			image_repo="$(awk '/^  repository: /{print $2; exit}' "${repo_root}/helm/eshu/values.yaml")"
-			image_tag="$(awk '/^  tag: /{gsub(/"/, ""); print $2; exit}' "${repo_root}/helm/eshu/values.yaml")"
+			# Scoped to the top-level image block: a file-wide first match
+			# would silently retarget the proof if another two-space
+			# repository:/tag: key ever appears above or the block re-indents.
+			image_repo="$(awk '/^image:/{inblk=1; next} /^[^[:space:]#]/{inblk=0} inblk && /^  repository: /{print $2; exit}' "${repo_root}/helm/eshu/values.yaml")"
+			image_tag="$(awk '/^image:/{inblk=1; next} /^[^[:space:]#]/{inblk=0} inblk && /^  tag: /{gsub(/"/, ""); print $2; exit}' "${repo_root}/helm/eshu/values.yaml")"
 			[[ -n "${image_repo}" && -n "${image_tag}" ]] || die "cannot read chart image from helm/eshu/values.yaml; set K8S_GOV_IMAGE_REPO/TAG explicitly"
 		fi
 		printf '==> pulling chart image %s:%s (no Dockerfile in this repo)\n' "${image_repo}" "${image_tag}"
