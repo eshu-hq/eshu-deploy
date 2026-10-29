@@ -76,10 +76,14 @@ jobs:
               # The Go contract suite pins exactly these trees (every entry
               # is read by a test via deployRepositoryRoot); a change to any
               # of them must run the suite, not just the lane that owns the
-              # files. Docs-only markdown elsewhere still skips every lane.
+              # files. The lane script itself is included: a change to
+              # scripts/ci/go.sh must run the go lane, otherwise the lane
+              # ships untested and ci-complete stays green by skip.
+              # Docs-only markdown elsewhere still skips every lane.
               - 'go/**'
               - 'go.mod'
               - 'go.sum'
+              - 'scripts/ci/go.sh'
               - 'helm/**'
               - 'compose/**'
               - 'docs/run-locally/docker-compose.md'
