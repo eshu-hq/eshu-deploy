@@ -73,9 +73,17 @@ jobs:
             shell:
               - '**/*.sh'
             go:
+              # The Go contract suite pins exactly these trees (every entry
+              # is read by a test via deployRepositoryRoot); a change to any
+              # of them must run the suite, not just the lane that owns the
+              # files. Docs-only markdown elsewhere still skips every lane.
               - 'go/**'
               - 'go.mod'
               - 'go.sum'
+              - 'helm/**'
+              - 'compose/**'
+              - 'docs/run-locally/docker-compose.md'
+              - '.env.remote-e2e.example'
             workflows:
               - '.github/workflows/**'
             misc:
@@ -98,7 +106,7 @@ jobs:
   lint:
     # YAML lint/format, actionlint, shellcheck. Runs on any content change;
     # docs-only PRs skip every lane and ci-complete still passes.
-    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.charts == 'true' || needs.changes.outputs.compose == 'true' || needs.changes.outputs.manifests == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.misc == 'true' }}
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.charts == 'true' || needs.changes.outputs.compose == 'true' || needs.changes.outputs.manifests == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.misc == 'true' }}
     needs: [changes]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
