@@ -22,7 +22,11 @@ if [ ! -x "${go_root}/bin/go" ]; then
 fi
 export PATH="${go_root}/bin:${PATH}"
 export GOTOOLCHAIN=local
-export GOFLAGS=-mod=mod
+# No -mod=mod: the Go default (-mod=readonly) must hold so this lane fails
+# when go.mod/go.sum drift from the imports instead of silently repairing
+# them in-worktree. (Locally a warm module cache masks the difference;
+# CI's cold cache is where readonly refuses.) Verified: plain
+# `go build ./...` passes at the module root.
 
 printf 'go: %s\n' "$(go version)"
 printf 'go: gofmt (no output below means clean)\n'
