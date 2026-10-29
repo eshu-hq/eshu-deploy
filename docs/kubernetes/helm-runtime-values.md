@@ -11,7 +11,7 @@ bootstrap, global env, connection tuning, reducer lanes, and repository sync.
 workloads.
 
 Defaults: enabled, Helm hooks on, `backoffLimit=1`,
-`activeDeadlineSeconds=600`, `ttlSecondsAfterFinished=86400`, empty service
+`activeDeadlineSeconds=3600`, `ttlSecondsAfterFinished=86400`, empty service
 account and annotations, and `100m/128Mi` requests with `1000m/1Gi` limits.
 
 Do not combine Helm hooks with chart-managed NornicDB. Hooks run before normal

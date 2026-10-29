@@ -57,7 +57,7 @@ enable both hook families at once — ArgoCD also processes `helm.sh/hook`
 annotations, so the chart fails the render as mutually exclusive.
 
 Size the deadline from measured builds: the chart default
-`activeDeadlineSeconds: 600` only bounds the bootstrap client pod while the
+`activeDeadlineSeconds: 3600` only bounds the bootstrap client pod while the
 Postgres backend keeps building unattended, and a `CREATE INDEX CONCURRENTLY`
 build behind a long transaction outlasts it. Environment overlays use at
 least 3600 s. A deadline kill still leaves the schema safe for the next run
