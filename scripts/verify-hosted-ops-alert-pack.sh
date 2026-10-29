@@ -175,12 +175,12 @@ ruby -r yaml -e '
 
 # Every eshu_* metric a status summary alert reads must be defined by a
 # non-test Go source file. A histogram suffix is stripped before the search.
-# Extracted repo: the emitting Go tree lives in eshu, not here. With no
-# non-test Go sources, the registry half of this check cannot run; the alert
-# shape half above still does. A threshold of zero would silently pass a
-# broken tree, so this skips loudly instead of weakening the assertion.
-if ! rg --files -g '*.go' -g '!*_test.go' "${repo_root}/go" 2>/dev/null | rg -q .; then
-	printf 'verify-hosted-ops-alert-pack: no non-test Go sources in %s/go; metric-registry check skipped (emitters live in eshu)\n' "${repo_root}"
+# Extracted repo: the emitting package (go/internal/telemetry) lives in eshu,
+# not here. Without it the registry half of this check cannot run; the alert
+# shape half above still does. This keys on the package dir, not on any .go
+# file, so a package-doc file can never defeat the skip.
+if [ ! -d "${repo_root}/go/internal/telemetry" ]; then
+	printf 'verify-hosted-ops-alert-pack: no emitting package in %s/go/internal/telemetry; metric-registry check skipped (emitters live in eshu)\n' "${repo_root}"
 else
 for rule_file in "${alerts}" "${prometheus_rule}"; do
 	while IFS= read -r metric; do
