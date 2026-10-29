@@ -50,6 +50,7 @@ jobs:
       compose: ${{ steps.filter.outputs.compose }}
       manifests: ${{ steps.filter.outputs.manifests }}
       shell: ${{ steps.filter.outputs.shell }}
+      go: ${{ steps.filter.outputs.go }}
       workflows: ${{ steps.filter.outputs.workflows }}
       misc: ${{ steps.filter.outputs.misc }}
     steps:
@@ -71,6 +72,10 @@ jobs:
               - 'examples/**'
             shell:
               - '**/*.sh'
+            go:
+              - 'go/**'
+              - 'go.mod'
+              - 'go.sum'
             workflows:
               - '.github/workflows/**'
             misc:
@@ -86,6 +91,9 @@ jobs:
               - '!examples/**'
               - '!**/*.sh'
               - '!.github/workflows/**'
+              - '!go/**'
+              - '!go.mod'
+              - '!go.sum'
 
   lint:
     # YAML lint/format, actionlint, shellcheck. Runs on any content change;
@@ -163,8 +171,21 @@ jobs:
       - name: manifests
         run: bash scripts/ci/manifests.sh
 
+  go:
+    # gofmt, go vet, and the Go contract test suite (pinned toolchain).
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.go == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.misc == 'true' }}
+    needs: [changes]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: go
+        run: bash scripts/ci/go.sh
+
   ci-complete:
-    needs: [changes, lint, charts, compose, manifests]
+    needs: [changes, lint, charts, compose, manifests, go]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5

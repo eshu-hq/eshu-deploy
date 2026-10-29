@@ -14,6 +14,7 @@ were legitimately skipped, so docs-only PRs merge without lane runs).
 | `compose/**`, `docker-compose*.y*ml` | `lint`, `compose` |
 | `manifests/**`, `gitops/**`, `examples/**` | `lint`, `manifests` |
 | `**/*.sh` | `lint` (shellcheck) |
+| `go/**`, `go.mod`, `go.sum` | `lint`, `go` (gofmt, vet, tests) |
 | `.github/workflows/**` | all lanes (proves a lane still passes) |
 | Push to `main` / weekly schedule | all lanes |
 
