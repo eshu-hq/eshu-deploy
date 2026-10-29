@@ -40,10 +40,13 @@ printf 'go: go vet\n'
 go vet ./go/...
 printf 'go: go mod tidy -diff (fails on drift, repairs nothing)\n'
 go mod tidy -diff
-vuln_bin="${tools_dir}/govulncheck"
+# Keyed by version: a pin bump must install the new binary instead of
+# reusing a stale cached one.
+vuln_bin="${tools_dir}/govulncheck-${GOVULNCHECK_VERSION}"
 if [ ! -x "${vuln_bin}" ]; then
   printf 'go: installing govulncheck %s\n' "${GOVULNCHECK_VERSION}"
   GOBIN="${tools_dir}" go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
+  mv "${tools_dir}/govulncheck" "${vuln_bin}"
 fi
 printf 'go: govulncheck\n'
 "${vuln_bin}" ./go/...

@@ -63,6 +63,9 @@ jobs:
             charts:
               - 'charts/**'
               - 'helm/**'
+              # scripts/ci/versions.sh is sourced by charts.sh: pin edits
+              # must run the lane (same green-by-skip class as #12).
+              - 'scripts/ci/versions.sh'
             compose:
               - 'compose/**'
               - 'docker-compose*.y*ml'
@@ -70,6 +73,9 @@ jobs:
               - 'manifests/**'
               - 'gitops/**'
               - 'examples/**'
+              # scripts/ci/versions.sh is sourced by manifests.sh: pin edits
+              # must run the lane (same green-by-skip class as #12).
+              - 'scripts/ci/versions.sh'
             shell:
               - '**/*.sh'
             go:
@@ -84,6 +90,9 @@ jobs:
               - 'go.mod'
               - 'go.sum'
               - 'scripts/ci/go.sh'
+              # versions.sh is sourced by go.sh: a pin-only edit must run
+              # this lane, not just lint (blocking P2 on #14).
+              - 'scripts/ci/versions.sh'
               - 'helm/**'
               - 'compose/**'
               - 'docs/run-locally/docker-compose.md'
@@ -184,7 +193,8 @@ jobs:
         run: bash scripts/ci/manifests.sh
 
   go:
-    # gofmt, go vet, and the Go contract test suite (pinned toolchain).
+    # gofmt, vet, tidy check, govulncheck, and the Go contract test suite
+    # (pinned toolchain, pinned helm).
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.go == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.misc == 'true' }}
     needs: [changes]
     runs-on: ubuntu-24.04

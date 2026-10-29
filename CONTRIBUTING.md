@@ -14,7 +14,9 @@ were legitimately skipped, so docs-only PRs merge without lane runs).
 | `compose/**`, `docker-compose*.y*ml` | `lint`, `compose` |
 | `manifests/**`, `gitops/**`, `examples/**` | `lint`, `manifests` |
 | `**/*.sh` | `lint` (shellcheck) |
-| `go/**`, `go.mod`, `go.sum` | `lint`, `go` (gofmt, vet, tests) |
+| `go/**`, `go.mod`, `go.sum` | `lint`, `go` (gofmt, vet, tidy check, govulncheck, tests) |
+| `scripts/ci/versions.sh` | `lint`, `go`, `charts`, `manifests` (sourced by every lane body) |
+| `scripts/ci/go.sh` | `lint`, `go` (a lane-body change must run its lane) |
 | `helm/**`, `compose/**` | owning lane(s) plus `go` (contract suite pins these trees) |
 | `docs/run-locally/docker-compose.md`, `.env.remote-e2e.example` | owning lane(s) plus `go` (read by the contract suite) |
 | `.github/workflows/**` | all lanes (proves a lane still passes) |
