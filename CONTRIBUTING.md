@@ -9,11 +9,14 @@ were legitimately skipped, so docs-only PRs merge without lane runs).
 
 | PR touches | Lanes |
 |---|---|
-| Docs only (`**/*.md`, `LICENSE`) | none; `ci-complete` succeeds |
+| Docs only (`**/*.md` except `docs/run-locally/docker-compose.md`, `LICENSE`) | none; `ci-complete` succeeds |
 | `charts/**`, `helm/**` | `lint`, `charts` |
 | `compose/**`, `docker-compose*.y*ml` | `lint`, `compose` |
 | `manifests/**`, `gitops/**`, `examples/**` | `lint`, `manifests` |
 | `**/*.sh` | `lint` (shellcheck) |
+| `go/**`, `go.mod`, `go.sum` | `lint`, `go` (gofmt, vet, tests) |
+| `helm/**`, `compose/**` | owning lane(s) plus `go` (contract suite pins these trees) |
+| `docs/run-locally/docker-compose.md`, `.env.remote-e2e.example` | owning lane(s) plus `go` (read by the contract suite) |
 | `.github/workflows/**` | all lanes (proves a lane still passes) |
 | Push to `main` / weekly schedule | all lanes |
 

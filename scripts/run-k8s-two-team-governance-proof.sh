@@ -28,10 +28,12 @@ set -euo pipefail
 #       [--no-build]
 #
 # Environment overrides mirror the flags (K8S_GOV_*). Without --no-build, the
-# driver builds the chart image, caches the exact published NornicDB artifact,
-# and builds the seed image from the chart image. With --no-build, the chart and
-# pinned NornicDB images must already be available to the cluster; the driver
-# still builds the seed image from the chart image.
+# driver builds the chart image from the repo Dockerfile (monorepo) or pulls
+# the chart's pinned published image (repos without a Dockerfile), caches the
+# exact published NornicDB artifact, and builds the seed image from the chart
+# image. With --no-build, the chart and pinned NornicDB images must already be
+# available to the cluster; the driver still builds the seed image from the
+# chart image.
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "$0")/.." && pwd))"
 
@@ -133,8 +135,23 @@ kc() { kubectl -n "${namespace}" "$@"; }
 # Phase 0: build the chart and seed images, and cache the immutable backend.
 # ---------------------------------------------------------------------------
 if [[ "${do_build}" == true ]]; then
-	printf '==> building chart image %s:%s\n' "${image_repo}" "${image_tag}"
-	docker build -t "${image_repo}:${image_tag}" -f "${repo_root}/Dockerfile" "${repo_root}" >/dev/null
+	if [[ -f "${repo_root}/Dockerfile" ]]; then
+		printf '==> building chart image %s:%s\n' "${image_repo}" "${image_tag}"
+		docker build -t "${image_repo}:${image_tag}" -f "${repo_root}/Dockerfile" "${repo_root}" >/dev/null
+	else
+		# Extracted deploy repo ships no Dockerfile: the chart image is the
+		# published artifact. Untouched eshu:local defaults are replaced with
+		# the chart's own pinned image so the default run stays working;
+		# explicit K8S_GOV_IMAGE_REPO/TAG (or flags) still win, and --no-build
+		# with a preloaded image keeps working.
+		if [[ "${image_repo}:${image_tag}" == "eshu:local" ]]; then
+			image_repo="$(awk '/^  repository: /{print $2; exit}' "${repo_root}/helm/eshu/values.yaml")"
+			image_tag="$(awk '/^  tag: /{gsub(/"/, ""); print $2; exit}' "${repo_root}/helm/eshu/values.yaml")"
+			[[ -n "${image_repo}" && -n "${image_tag}" ]] || die "cannot read chart image from helm/eshu/values.yaml; set K8S_GOV_IMAGE_REPO/TAG explicitly"
+		fi
+		printf '==> pulling chart image %s:%s (no Dockerfile in this repo)\n' "${image_repo}" "${image_tag}"
+		docker pull "${image_repo}:${image_tag}" >/dev/null
+	fi
 	printf '==> caching exact relationship-identity backend %s\n' "${nornicdb_image}"
 	docker pull "${nornicdb_image}" >/dev/null
 fi

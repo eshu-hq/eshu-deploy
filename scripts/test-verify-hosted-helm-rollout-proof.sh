@@ -91,7 +91,7 @@ chart_field() {
 
 repo="${tmp_root}/repo"
 mkdir -p "${repo}"
-cp -R "${repo_root}/deploy" "${repo}/deploy"
+cp -R "${repo_root}/helm" "${repo}/helm"
 install_fake_tools "${repo}"
 
 out_dir="${repo}/_proof"

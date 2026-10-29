@@ -9,9 +9,9 @@
 # helm, docker, kubectl is bootstrapped. Pinned downloads (actionlint,
 # kubeconform, kubectl) land in .tools/ (gitignored) on first run.
 
-.PHONY: ci ci-lint ci-charts ci-compose ci-manifests help
+.PHONY: ci ci-lint ci-charts ci-compose ci-manifests ci-go help
 
-ci: ci-lint ci-charts ci-compose ci-manifests ## Run all PR lanes locally.
+ci: ci-lint ci-charts ci-compose ci-manifests ci-go ## Run all PR lanes locally.
 
 ci-lint: ## YAML lint/format, actionlint, shellcheck.
 	bash scripts/ci/lint.sh
@@ -24,6 +24,9 @@ ci-compose: ## docker compose config per documented invocation.
 
 ci-manifests: ## kustomize builds + helm renders + pinned-schema kubeconform.
 	bash scripts/ci/manifests.sh
+
+ci-go: ## gofmt, go vet, and the Go contract test suite (pinned toolchain).
+	bash scripts/ci/go.sh
 
 help: ## List targets.
 	@grep -E '^[a-z-]+: ## ' $(MAKEFILE_LIST) | sort | awk -F ': ## ' '{printf "%-14s %s\n", $$1, $$2}'

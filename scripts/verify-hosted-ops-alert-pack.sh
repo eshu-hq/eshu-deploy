@@ -175,6 +175,13 @@ ruby -r yaml -e '
 
 # Every eshu_* metric a status summary alert reads must be defined by a
 # non-test Go source file. A histogram suffix is stripped before the search.
+# Extracted repo: the emitting package (go/internal/telemetry) lives in eshu,
+# not here. Without it the registry half of this check cannot run; the alert
+# shape half above still does. This keys on the package dir, not on any .go
+# file, so a package-doc file can never defeat the skip.
+if [ ! -d "${repo_root}/go/internal/telemetry" ]; then
+	printf 'verify-hosted-ops-alert-pack: no emitting package in %s/go/internal/telemetry; metric-registry check skipped (emitters live in eshu)\n' "${repo_root}"
+else
 for rule_file in "${alerts}" "${prometheus_rule}"; do
 	while IFS= read -r metric; do
 		[[ -n "${metric}" ]] || continue
@@ -191,6 +198,7 @@ for rule_file in "${alerts}" "${prometheus_rule}"; do
 		puts names.uniq.sort
 	' "${rule_file}" "${metric_checked_alerts[@]}")
 done
+fi
 
 if rg --quiet "${private_label_pattern}" "${alerts}" "${prometheus_rule}"; then
 	die "alert pack contains high-cardinality or private-data-shaped label keys"

@@ -99,6 +99,21 @@ if [ ! -s "${metrics_dashboard_tmp}" ]; then
   exit 0
 fi
 
+if [ ! -d "${instruments_dir}" ]; then
+  # Extracted repo: the telemetry registry lives in eshu, not here. Check
+  # dashboard JSON validity only; registry cross-check needs an eshu checkout.
+  printf 'verify-dashboard-metrics: registry %s absent; checking dashboard JSON validity only\n' "${instruments_dir}"
+  while IFS= read -r df; do
+    [ -n "${df}" ] || continue
+    if command -v jq >/dev/null 2>&1; then
+      jq empty "${df}" 2>/dev/null || { printf 'verify-dashboard-metrics: invalid JSON: %s\n' "${df}" >&2; exit 1; }
+    fi
+  done <"${dashboard_files_tmp}"
+  count="$(wc -l <"${metrics_dashboard_tmp}" | tr -d ' ')"
+  printf 'verify-dashboard-metrics: %d dashboard metrics listed, registry check skipped (no eshu checkout)\n' "${count}"
+  exit 0
+fi
+
 # instruments_metrics_tmp: every eshu_dp_* name registered anywhere in the
 # telemetry package (instruments.go plus per-metric registration files).
 # PCRE2 mode (-P) is required so \s can match across newlines between the
