@@ -66,8 +66,11 @@ guidance belong in the public Kubernetes docs.
   `ESHU_SCOPED_TOKENS_FILE` once the Secret exists: a missing file makes the API
   fail closed at startup.
 - Staged extracted-image pins (Refs eshu-hq/eshu#9633, part of #6707):
-  `mcpServer.image` carries a full image reference and renders it when set,
-  falling back to the shared monolith image when empty. `extractedApi`
+  `mcpServer.image` is staged-only: do not set it until eshu-hq/eshu#9521
+  lands the mcp-server command switch, because the template still renders
+  the monolith `eshu mcp start --transport http` command and a set pin
+  would yield a command-mismatched pod. Empty (the default) falls back to
+  the shared monolith image. `extractedApi`
   (default `enabled: false`) renders the extracted-api Deployment and Service
   only when enabled; its `image.repository`/`tag`/`digest` render
   `repository:tag[@digest]`, and `coreBaseURL` feeds `eshu-api

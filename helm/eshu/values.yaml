@@ -222,9 +222,11 @@ mcpServer:
   replicas: 1
   revisionHistoryLimit: 3
   # Full image reference override for the extracted eshu-mcp binary
-  # (Refs eshu-hq/eshu#9633, part of #6707). Empty keeps the shared
-  # monolith image below; set to the staged pin
-  # (ghcr.io/eshu-hq/eshu-mcp:0.2.0@sha256:<digest>) to render it.
+  # (Refs eshu-hq/eshu#9633, part of #6707). Staged-only: do NOT set this
+  # until eshu-hq/eshu#9521 lands the mcp-server command switch. The
+  # template still renders the monolith `eshu mcp start --transport http`
+  # command, so a set pin yields a command-mismatched pod. Empty (the
+  # default) keeps the shared monolith image below.
   image: ""
   # MCP-only environment variables. To choose what tools/list advertises, set
   # ESHU_MCP_TOOL_SURFACE here (issue #8758). Unset means full. A direct
@@ -291,8 +293,10 @@ mcpServer:
 extractedApi:
   # Extracted eshu-api edge (Refs eshu-hq/eshu#9633, part of #6707).
   # Disabled by default: no Deployment or Service renders until the
-  # cutover window flips this on, so a later enable needs no second
-  # chart change. The QA sync of the wiring alone moves no workload.
+  # cutover window flips this on. A later enable needs no second chart
+  # change to render; the extracted-api NetworkPolicy entry and metrics
+  # wiring still land in eshu-hq/eshu#9520 before a restricted-mode
+  # cutover. The QA sync of the wiring alone moves no workload.
   enabled: false
   replicas: 1
   revisionHistoryLimit: 3
