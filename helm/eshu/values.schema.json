@@ -1476,6 +1476,43 @@
         "enabled": { "type": "boolean" },
         "replicas": { "type": "integer", "minimum": 0 },
         "revisionHistoryLimit": { "type": "integer", "minimum": 0 },
+        "image": {
+          "type": "string",
+          "description": "Full image reference override for the extracted eshu-mcp binary (Refs eshu-hq/eshu#9633). Empty keeps the shared monolith image; set to the staged pin to render it."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "extraEnv": { "$ref": "#/definitions/secretEnv" },
+        "extraVolumes": { "type": "array", "items": { "type": "object" } },
+        "extraVolumeMounts": { "type": "array", "items": { "type": "object" } },
+        "connectionTuning": { "$ref": "#/definitions/connectionTuning" },
+        "resources": { "type": "object" }
+      }
+    },
+    "extractedApi": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "replicas": { "type": "integer", "minimum": 0 },
+        "revisionHistoryLimit": { "type": "integer", "minimum": 0 },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "image": {
+          "type": "object",
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "tag": { "type": "string" },
+            "digest": {
+              "type": "string",
+              "description": "Digest pin (sha256:<hex>), appended as @digest when set. Carries the staged QA pin (Refs eshu-hq/eshu#9633)."
+            }
+          }
+        },
+        "coreBaseURL": {
+          "type": "string",
+          "description": "Core read-API origin for eshu-api --core-base-url. Empty fails closed at startup."
+        },
         "env": {
           "type": "object",
           "additionalProperties": { "type": "string" }
