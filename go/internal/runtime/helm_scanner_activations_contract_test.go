@@ -19,10 +19,15 @@ import (
 // moves those pins and these entries together; a test that pins one side
 // against a stale copy of the other fails here instead of pulling stale
 // analyzers in QA.
+//
+// Current pins: eshu Scanner-Publish-SHA 17e42456aaa3a411cb429babd3dcf2b63bd07941
+// (docker-publish run 41099864459, merged by eshu-hq/eshu#9675). This test
+// compares the values file to these constants only; it does not read the
+// eshu manifest, so a republish still needs this bump by hand.
 const (
-	scannerImageDigest     = "sha256:f92fabfc560a7703cb92ac227b90ce42dc45522f4d25533d342c5a140e7bd372"
-	scannerSBOMDigest      = "sha256:cf0e10d62bd4ce0c6bfdf0de1cf3260565b67ed5189fe9544d9284906c9ecd90"
-	scannerOSRuntimeDigest = "sha256:3dbca86bcb8f068a3fb50fcb6ad6a5806f32b9dc3e567dfb9fd7e74f60821e31"
+	scannerImageDigest     = "sha256:2c9269e917dbfbf4116a1b9550694fc18238c8a3e6847df98af37d1b7b423815"
+	scannerSBOMDigest      = "sha256:2d3b72aa4850ee818af1e652343e497e45c80bdd9c82eaae11da9e6b61ee43da"
+	scannerOSRuntimeDigest = "sha256:6ff09b67b40741b5ed2d1e7674163124a7372d7b76ecfdd790c33dc955e2b574"
 )
 
 var scannerSeedImagePattern = regexp.MustCompile(`^ghcr\.io/eshu-hq/scanner-[a-z]+@sha256:[0-9a-f]{64}$`)
