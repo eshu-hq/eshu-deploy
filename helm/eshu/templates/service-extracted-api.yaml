@@ -1,0 +1,20 @@
+{{- if .Values.extractedApi.enabled }}
+# Extracted eshu-api edge Service (Refs eshu-hq/eshu#9633, part of
+# #6707). Renders only alongside the extracted-api Deployment.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eshu.extractedApiFullname" . }}
+  labels:
+    {{- include "eshu.labels" . | nindent 4 }}
+    app.kubernetes.io/component: extracted-api
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "eshu.extractedApiSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.extractedApi.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

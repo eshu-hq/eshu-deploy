@@ -1,0 +1,121 @@
+{{- if .Values.extractedApi.enabled }}
+# Extracted eshu-api edge (Refs eshu-hq/eshu#9633, part of #6707). Renders
+# only when extractedApi.enabled is true; the default false keeps the
+# monolith API as the sole serving workload.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eshu.extractedApiFullname" . }}
+  labels:
+    {{- include "eshu.labels" . | nindent 4 }}
+    app.kubernetes.io/component: extracted-api
+spec:
+  replicas: {{ .Values.extractedApi.replicas }}
+  revisionHistoryLimit: {{ .Values.extractedApi.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "eshu.extractedApiSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "eshu.extractedApiSelectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "eshu.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: extracted-api
+          image: "{{ include "eshu.extractedApiImage" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # The extracted binary is /eshu-api, not the monolith CLI: it
+          # takes --addr/--core-base-url flags. An empty coreBaseURL omits
+          # the flag and the binary fails closed at startup; cutover sets
+          # it to the in-cluster core Service (eshu-hq/eshu#9520).
+          command: ["/eshu-api"]
+          args:
+            - --addr
+            - {{ printf ":%d" (.Values.extractedApi.port | int) | quote }}
+            {{- if .Values.extractedApi.coreBaseURL }}
+            - --core-base-url
+            - {{ .Values.extractedApi.coreBaseURL | quote }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          env:
+            - name: ESHU_HOME
+              value: /tmp/.eshu
+            - name: HOME
+              value: /tmp
+            # The edge answers health itself and auth-gates /api/* on this
+            # shared key; unset fails closed with 401s, never open.
+            - name: ESHU_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.apiAuth.secretName }}
+                  key: {{ .Values.apiAuth.key }}
+            # The edge holds no store handles: only operator env rides
+            # along, not the monolith datastore/otel/prometheus hooks.
+            {{- include "eshu.renderConnectionTuningEnv" .Values.extractedApi.connectionTuning | nindent 12 }}
+            {{- include "eshu.renderEnvMaps" (list .Values.env .Values.extractedApi.env) | nindent 12 }}
+            {{- with .Values.extractedApi.extraEnv }}
+            {{- include "eshu.renderReadExtraEnv" (dict "service" "extractedApi" "env" $.Values.env "serviceEnv" $.Values.extractedApi.env "extraEnv" .) | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.extractedApi.port }}
+              protocol: TCP
+          # Liveness hits the cheap self-answered /health (not /healthz:
+          # the extracted binary serves GET /health plus GET /readyz).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Readiness verifies the edge can reach core before the Service
+          # admits endpoints.
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          resources:
+            {{- toYaml .Values.extractedApi.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.extractedApi.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.extractedApi.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+{{- end }}

@@ -221,6 +221,13 @@ mcpServer:
   enabled: true
   replicas: 1
   revisionHistoryLimit: 3
+  # Full image reference override for the extracted eshu-mcp binary
+  # (Refs eshu-hq/eshu#9633, part of #6707). Staged-only: do NOT set this
+  # until eshu-hq/eshu#9521 lands the mcp-server command switch. The
+  # template still renders the monolith `eshu mcp start --transport http`
+  # command, so a set pin yields a command-mismatched pod. Empty (the
+  # default) keeps the shared monolith image below.
+  image: ""
   # MCP-only environment variables. To choose what tools/list advertises, set
   # ESHU_MCP_TOOL_SURFACE here (issue #8758). Unset means full. A direct
   # tools/call to a tool the surface hides still dispatches (the query profile's
@@ -260,6 +267,54 @@ mcpServer:
   # and, since #6564, the same ESHU_AUTH_SECRET_ENC_KEY(_FILE) DEK Secret the
   # API holds: this process seals the tag-history continuation cursor with it,
   # so a scoped caller cannot page that route here without it. See README.md.
+  extraVolumes: []
+  extraVolumeMounts: []
+  connectionTuning:
+    postgres:
+      maxOpenConns: ""
+      maxIdleConns: ""
+      connMaxLifetime: ""
+      connMaxIdleTime: ""
+      pingTimeout: ""
+    neo4j:
+      maxConnectionPoolSize: ""
+      maxConnectionLifetime: ""
+      connectionAcquisitionTimeout: ""
+      socketConnectTimeout: ""
+      verifyTimeout: ""
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 8Gi
+
+extractedApi:
+  # Extracted eshu-api edge (Refs eshu-hq/eshu#9633, part of #6707).
+  # Disabled by default: no Deployment or Service renders until the
+  # cutover window flips this on. A later enable needs no second chart
+  # change to render; the extracted-api NetworkPolicy entry and metrics
+  # wiring still land in eshu-hq/eshu#9520 before a restricted-mode
+  # cutover. The QA sync of the wiring alone moves no workload.
+  enabled: false
+  replicas: 1
+  revisionHistoryLimit: 3
+  port: 8080
+  image:
+    repository: ghcr.io/eshu-hq/eshu-api
+    tag: 0.2.0
+    # Digest pin (sha256:<64 hex>). Appended as @digest when set; the
+    # staged QA pin lives in extractedApi.image.digest.
+    digest: ""
+  # Core read-API origin the edge dispatches to (eshu-api
+  # --core-base-url). Empty fails closed at startup: the binary refuses
+  # to serve without it. Cutover sets this to the in-cluster core
+  # Service; see eshu-hq/eshu#9520.
+  coreBaseURL: ""
+  env: {}
+  # Extracted-API-only Kubernetes EnvVar entries; use valueFrom.secretKeyRef for sensitive values.
+  extraEnv: []
   extraVolumes: []
   extraVolumeMounts: []
   connectionTuning:

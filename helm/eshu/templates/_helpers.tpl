@@ -36,6 +36,16 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-mcp-server" (include "eshu.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "eshu.extractedApiFullname" -}}
+{{- printf "%s-extracted-api" (include "eshu.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "eshu.extractedApiImage" -}}
+{{- $image := .Values.extractedApi.image -}}
+{{- printf "%s:%s" $image.repository $image.tag -}}
+{{- with $image.digest }}@{{ . }}{{- end -}}
+{{- end -}}
+
 {{- define "eshu.ingesterFullname" -}}
 {{- printf "%s-ingester" (include "eshu.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
@@ -168,6 +178,11 @@ app.kubernetes.io/component: api
 {{- define "eshu.mcpServerSelectorLabels" -}}
 {{- include "eshu.selectorLabels" . }}
 app.kubernetes.io/component: mcp-server
+{{- end -}}
+
+{{- define "eshu.extractedApiSelectorLabels" -}}
+{{- include "eshu.selectorLabels" . }}
+app.kubernetes.io/component: extracted-api
 {{- end -}}
 
 {{- define "eshu.ingesterSelectorLabels" -}}

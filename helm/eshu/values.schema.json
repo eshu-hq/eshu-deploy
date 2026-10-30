@@ -1476,6 +1476,44 @@
         "enabled": { "type": "boolean" },
         "replicas": { "type": "integer", "minimum": 0 },
         "revisionHistoryLimit": { "type": "integer", "minimum": 0 },
+        "image": {
+          "type": "string",
+          "description": "Full image reference override for the extracted eshu-mcp binary (Refs eshu-hq/eshu#9633). Staged-only: do not set until eshu-hq/eshu#9521 lands the mcp-server command switch; the template still renders the monolith command, so a set pin yields a command-mismatched pod. Empty (the default) keeps the shared monolith image."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "extraEnv": { "$ref": "#/definitions/secretEnv" },
+        "extraVolumes": { "type": "array", "items": { "type": "object" } },
+        "extraVolumeMounts": { "type": "array", "items": { "type": "object" } },
+        "connectionTuning": { "$ref": "#/definitions/connectionTuning" },
+        "resources": { "type": "object" }
+      }
+    },
+    "extractedApi": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "replicas": { "type": "integer", "minimum": 0 },
+        "revisionHistoryLimit": { "type": "integer", "minimum": 0 },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "image": {
+          "type": "object",
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "tag": { "type": "string", "minLength": 1 },
+            "digest": {
+              "type": "string",
+              "pattern": "^(sha256:[a-f0-9]{64})?$",
+              "description": "Digest pin (sha256:<64 hex>), appended as @digest when set. Empty (the default) means no digest; any non-empty value must match the strict form, mirroring the seed.image precedent. Carries the staged QA pin (Refs eshu-hq/eshu#9633)."
+            }
+          }
+        },
+        "coreBaseURL": {
+          "type": "string",
+          "description": "Core read-API origin for eshu-api --core-base-url. Empty fails closed at startup."
+        },
         "env": {
           "type": "object",
           "additionalProperties": { "type": "string" }

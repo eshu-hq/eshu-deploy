@@ -65,6 +65,21 @@ guidance belong in the public Kubernetes docs.
   `ESHU_SCOPED_TOKENS_FILE` at the mounted path. Only set
   `ESHU_SCOPED_TOKENS_FILE` once the Secret exists: a missing file makes the API
   fail closed at startup.
+- Staged extracted-image pins (Refs eshu-hq/eshu#9633, part of #6707):
+  `mcpServer.image` is staged-only: do not set it until eshu-hq/eshu#9521
+  lands the mcp-server command switch, because the template still renders
+  the monolith `eshu mcp start --transport http` command and a set pin
+  would yield a command-mismatched pod. Empty (the default) falls back to
+  the shared monolith image. `extractedApi`
+  (default `enabled: false`) renders the extracted-api Deployment and Service
+  only when enabled; its `image.repository`/`tag`/`digest` render
+  `repository:tag[@digest]`, and `coreBaseURL` feeds `eshu-api
+  --core-base-url` (empty fails closed at startup). The extracted binaries are
+  `/eshu-mcp` and `/eshu-api` with `--addr`/`--core-base-url` flags, not the
+  monolith `eshu mcp|api start` subcommands, and the extracted API probes are
+  `GET /health` (liveness) and `GET /readyz` (readiness). Enabling
+  `extractedApi` without `coreBaseURL` (cutover eshu-hq/eshu#9520) CrashLoops
+  by design rather than serving open.
 - Bootstrap identity seeding (epic #4962/#4963) reuses the same
   `api.extraVolumes`/`api.extraVolumeMounts` + `api.env` convention above —
   there is no dedicated chart value for it. Two operator-managed Secrets are

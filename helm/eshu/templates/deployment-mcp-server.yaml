@@ -41,7 +41,15 @@ spec:
       {{- end }}
       containers:
         - name: mcp-server
+          {{- /* Staged extracted-image pin (Refs eshu-hq/eshu#9633): when
+          .Values.mcpServer.image carries the pin it renders; empty or
+          unset falls back to the shared monolith image. A template
+          comment keeps default renders byte-identical. */}}
+          {{- if .Values.mcpServer.image }}
+          image: "{{ .Values.mcpServer.image }}"
+          {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["eshu", "mcp", "start", "--transport", "http"]
           securityContext:
