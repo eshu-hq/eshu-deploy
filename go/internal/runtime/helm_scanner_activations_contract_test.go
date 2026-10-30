@@ -32,6 +32,11 @@ type scannerActivationCase struct {
 	componentID string
 	binary      string
 	image       string
+	// grants lists one reconcile-script fragment per RequiredGrants entry
+	// the QA activation must carry. The grant script is the admission truth
+	// at runtime, so the fragments pin the kinds, schema versions, scope,
+	// and lifetimes the entries claim.
+	grants []string
 }
 
 // renderScannerActivationsQA renders the chart with the committed QA
@@ -81,9 +86,30 @@ func TestHelmScannerActivationsRenderSeedDeployments(t *testing.T) {
 		t.Fatal("activations mode rendered the single legacy worker Deployment")
 	}
 	cases := []scannerActivationCase{
-		{instance: "scanner-image", componentID: "eshu.scanner.image", binary: "eshu-scanner-component-image", image: "ghcr.io/eshu-hq/scanner-image@" + scannerImageDigest},
-		{instance: "scanner-sbom", componentID: "eshu.scanner.sbom", binary: "eshu-scanner-component-sbom", image: "ghcr.io/eshu-hq/scanner-sbom@" + scannerSBOMDigest},
-		{instance: "scanner-osruntime", componentID: "eshu.scanner.osruntime", binary: "eshu-scanner-component-osruntime", image: "ghcr.io/eshu-hq/scanner-osruntime@" + scannerOSRuntimeDigest},
+		{
+			instance: "scanner-image", componentID: "eshu.scanner.image", binary: "eshu-scanner-component-image", image: "ghcr.io/eshu-hq/scanner-image@" + scannerImageDigest,
+			grants: []string{
+				"--kind 'scanner_worker.analysis' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+				"--kind 'scanner_worker.warning' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+				"--kind 'vulnerability.os_package' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+				"--kind 'vulnerability.warning' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+			},
+		},
+		{
+			instance: "scanner-sbom", componentID: "eshu.scanner.sbom", binary: "eshu-scanner-component-sbom", image: "ghcr.io/eshu-hq/scanner-sbom@" + scannerSBOMDigest,
+			grants: []string{
+				"--kind 'sbom.document' --schema-version '1.1.0' --scope 'scanner_worker' --expires-in '720h'",
+				"--kind 'sbom.component' --schema-version '1.1.0' --scope 'scanner_worker' --expires-in '720h'",
+				"--kind 'sbom.warning' --schema-version '1.1.0' --scope 'scanner_worker' --expires-in '720h'",
+			},
+		},
+		{
+			instance: "scanner-osruntime", componentID: "eshu.scanner.osruntime", binary: "eshu-scanner-component-osruntime", image: "ghcr.io/eshu-hq/scanner-osruntime@" + scannerOSRuntimeDigest,
+			grants: []string{
+				"--kind 'vulnerability.os_package' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+				"--kind 'vulnerability.warning' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.instance, func(t *testing.T) {
@@ -119,6 +145,15 @@ func TestHelmScannerActivationsRenderSeedDeployments(t *testing.T) {
 			assertHelmLiteralEnv(t, env, "COMPONENT_ID", tc.componentID)
 			assertHelmLiteralEnv(t, env, "COMPONENT_VERSION", "0.1.0")
 			assertHelmLiteralEnv(t, env, "INSTANCE_ID", tc.instance)
+			script := strings.Join(helmStringSlice(reconcile["command"]), "\n")
+			for _, grant := range tc.grants {
+				if !strings.Contains(script, grant) {
+					t.Fatalf("%s reconcile script missing grant %q:\n%s", tc.instance, grant, script)
+				}
+			}
+			if got := strings.Count(script, "eshu component grant "); got != len(tc.grants) {
+				t.Fatalf("%s reconcile script grants %d kinds, want %d", tc.instance, got, len(tc.grants))
+			}
 		})
 	}
 }
