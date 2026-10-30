@@ -1,0 +1,129 @@
+# QA activation entries for the three scanner component images
+# (eshu-hq/eshu#9501). Each entry mirrors one reviewed eshu-side activation
+# contract row: digest-only seed image, the exact in-image seed binary the
+# Dockerfile ships, and the RequiredGrants set the host enforces. Apply with
+# `-f` on top of environment values; the chart default keeps
+# `componentExtensionCollector.activations: []`, so unconfigured renders stay
+# byte-identical (the scanner contract test pins both directions).
+#
+# The host scope and config targets below are QA placeholders. They are
+# structurally valid (the seeded binaries accept them) but point at QA
+# material that does not exist, so claims against them fail closed until an
+# operator points them at a real image rootfs or repository checkout, the
+# same way the loki/tempo examples ship an empty base_url.
+contentStore:
+  dsn: postgresql://eshu:secret@postgres:5432/eshu
+neo4j:
+  auth:
+    secretName: ""
+observability:
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+workflowCoordinator:
+  enabled: true
+  deploymentMode: active
+  claimsEnabled: true
+componentExtensionCollector:
+  enabled: true
+  trustMode: allowlist
+  allowIds: eshu.scanner.image,eshu.scanner.sbom,eshu.scanner.osruntime
+  allowPublishers: eshu-hq
+  extensionEgressPolicyJSON: '{"mode":"restricted"}'
+  pollInterval: 13s
+  activations:
+    - instanceId: scanner-image
+      componentId: eshu.scanner.image
+      componentVersion: 0.1.0
+      mode: scheduled
+      seed:
+        image: ghcr.io/eshu-hq/scanner-image@sha256:f92fabfc560a7703cb92ac227b90ce42dc45522f4d25533d342c5a140e7bd372
+        command: ["/usr/local/bin/eshu-scanner-component-image", "seed"]
+        pullPolicy: IfNotPresent
+      host:
+        sourceSystem: scanner_worker
+        scope:
+          id: "image:qa"
+          kind: image_source
+      config:
+        acceptance_unit_id: "image:qa"
+        targets:
+          - scope_id: "image:qa"
+            rootfs_path: /qa/scanner/image-rootfs
+            image_reference: qa/scanner-image:qa
+      grants:
+        - kind: scanner_worker.analysis
+          schemaVersions: ["1.0.0"]
+          scope: scanner_worker
+          expiresIn: 720h
+        - kind: scanner_worker.warning
+          schemaVersions: ["1.0.0"]
+          scope: scanner_worker
+          expiresIn: 720h
+        - kind: vulnerability.os_package
+          schemaVersions: ["1.0.0"]
+          scope: scanner_worker
+          expiresIn: 720h
+        - kind: vulnerability.warning
+          schemaVersions: ["1.0.0"]
+          scope: scanner_worker
+          expiresIn: 720h
+    - instanceId: scanner-sbom
+      componentId: eshu.scanner.sbom
+      componentVersion: 0.1.0
+      mode: scheduled
+      seed:
+        image: ghcr.io/eshu-hq/scanner-sbom@sha256:cf0e10d62bd4ce0c6bfdf0de1cf3260565b67ed5189fe9544d9284906c9ecd90
+        command: ["/usr/local/bin/eshu-scanner-component-sbom", "seed"]
+        pullPolicy: IfNotPresent
+      host:
+        sourceSystem: scanner_worker
+        scope:
+          id: "repository:qa"
+          kind: repository_source
+      config:
+        acceptance_unit_id: "repository:qa"
+        targets:
+          - scope_id: "repository:qa"
+            root_path: /qa/scanner/sbom-repo
+      grants:
+        - kind: sbom.document
+          schemaVersions: ["1.1.0"]
+          scope: scanner_worker
+          expiresIn: 720h
+        - kind: sbom.component
+          schemaVersions: ["1.1.0"]
+          scope: scanner_worker
+          expiresIn: 720h
+        - kind: sbom.warning
+          schemaVersions: ["1.1.0"]
+          scope: scanner_worker
+          expiresIn: 720h
+    - instanceId: scanner-osruntime
+      componentId: eshu.scanner.osruntime
+      componentVersion: 0.1.0
+      mode: scheduled
+      seed:
+        image: ghcr.io/eshu-hq/scanner-osruntime@sha256:3dbca86bcb8f068a3fb50fcb6ad6a5806f32b9dc3e567dfb9fd7e74f60821e31
+        command: ["/usr/local/bin/eshu-scanner-component-osruntime", "seed"]
+        pullPolicy: IfNotPresent
+      host:
+        sourceSystem: scanner_worker
+        scope:
+          id: "image:qa"
+          kind: image_source
+      config:
+        acceptance_unit_id: "image:qa"
+        targets:
+          - scope_id: "image:qa"
+            rootfs_path: /qa/scanner/os-rootfs
+      grants:
+        - kind: vulnerability.os_package
+          schemaVersions: ["1.0.0"]
+          scope: scanner_worker
+          expiresIn: 720h
+        - kind: vulnerability.warning
+          schemaVersions: ["1.0.0"]
+          scope: scanner_worker
+          expiresIn: 720h
