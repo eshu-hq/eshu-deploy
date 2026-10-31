@@ -699,6 +699,13 @@ org-shape phases plus a negative-leakage module:
 | Shape B (OIDC via mock IdP) | Provider CRUD; the live discovery flip to 200; a scripted RFC 9728 + PKCE OAuth chain minting a JWT bearer; the F-2 challenge-precedence regression (valid token → 200 no challenge; expired/wrong-aud → bare `Bearer`; unknown-issuer → `resource_metadata`); the `require_sso` flip keeping tokens and break-glass working. |
 | Negative-leakage | Credential-less probes → 401 with no tool/server/protocol leakage; distinct bad-credential denials (via the oidcbearer resolver's structured-log `outcome` and the F-2 challenge shape); a non-vacuous cross-scope repository row filter; a raw-token-absence scan across logs, audit rows, and the DOM. |
 
+> Satellite static-discovery note: `mcp-server` sets
+> `ESHU_AUTH_AUTHORIZATION_SERVERS` from boot (defaulting to the in-network mock IdP issuer),
+> so the satellite serves the RFC 9728 discovery document with HTTP 200 from boot — the
+> "404 discovery" / "live discovery flip" phrasing in the Shape A, C, and B rows above describes the
+> retired in-tree server posture. The eshu-repo Shape A/C/B assertions are being updated to the
+> static posture in `eshu-hq/eshu#9731`.
+
 The graph is Neo4j with no published ports; the runner seeds it with `docker compose exec neo4j cypher-shell`.
 
 Two additional verifiers back the suite:
