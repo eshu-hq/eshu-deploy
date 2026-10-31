@@ -340,6 +340,10 @@ services:
       # Go-derived sweep policy demands
       # (scripts/verify-scoped-route-catalog-sweep.sh).
       ESHU_QUERY_PROFILE: ${ESHU_QUERY_PROFILE:-}
+      # #9670: the satellite reads ESHU_MCP_QUERY_PROFILE, not
+      # ESHU_QUERY_PROFILE — map the suite knob onto the satellite key or the
+      # sweep silently runs the production profile.
+      ESHU_MCP_QUERY_PROFILE: ${ESHU_QUERY_PROFILE:-}
     ports: !override
       - "${ESHU_E2E_BIND_ADDR:-127.0.0.1}:${ESHU_E2E_MCP_PORT:-29081}:8080"
     volumes:

@@ -292,7 +292,10 @@ services:
     build:
       context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
-    command: ["/usr/local/bin/eshu-mcp-server"]
+    # #9670: the image now ships the eshu-mcp satellite at this path. It is a
+    # core-forwarding edge: --core-base-url is required and the listen
+    # address travels on -addr (it does not read ESHU_MCP_ADDR).
+    command: ["/usr/local/bin/eshu-mcp-server", "-addr=:8080", "-core-base-url=http://eshu:8080"]
     ports:
       - "${ESHU_MCP_PORT:-8081}:8080"
       # MCP mounts /metrics on the main HTTP listener.
@@ -314,15 +317,14 @@ services:
       ESHU_GIT_AUTH_METHOD: none
       ESHU_REPOSITORY_RULES_JSON: ${ESHU_REPOSITORY_RULES_JSON:-[]}
       ESHU_MCP_TRANSPORT: http
-      ESHU_MCP_ADDR: ":8080"
       ESHU_API_KEY: ${ESHU_API_KEY:-}
       ESHU_AUTO_GENERATE_API_KEY: "true"
       # Same DEK the api service gets, and the same all-zero placeholder. The
-      # MCP server dispatches list_container_image_tag_history in-process and
-      # seals that route's continuation cursor with this key (#6564), so a
-      # cursor the API issued opens here only when both hold the same value.
-      # Without it, a scoped caller's tag-history paging fails closed here
-      # while unscoped paging is unaffected.
+      # satellite forwards tag-history calls to core, which seals that route's
+      # continuation cursor with this key (#6564), so a cursor the API issued
+      # opens only when both hold the same value. Without it, a scoped
+      # caller's tag-history paging fails closed while unscoped paging is
+      # unaffected.
       ESHU_AUTH_SECRET_ENC_KEY: ${ESHU_AUTH_SECRET_ENC_KEY:-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}
       ESHU_DEPLOYMENT_ENVIRONMENT: local-compose
       ESHU_SEMANTIC_PROVIDER_PROFILES_JSON: ${ESHU_SEMANTIC_PROVIDER_PROFILES_JSON:-}
