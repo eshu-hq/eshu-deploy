@@ -92,7 +92,6 @@ services:
       ESHU_GITHUB_ORG: acme
       ESHU_REPOSITORY_RULES_JSON: "[]"
       ESHU_MCP_TRANSPORT: http
-      ESHU_MCP_ADDR: ":8080"
       ESHU_API_KEY: ${ESHU_DEMO_API_KEY:-}
       ESHU_AUTO_GENERATE_API_KEY: "false"
       # Breaking change (#5168): unlike docker-compose.yaml's mcp-server (which
