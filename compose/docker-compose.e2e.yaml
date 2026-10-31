@@ -332,6 +332,13 @@ services:
       ESHU_API_KEY: ""
       ESHU_AUTO_GENERATE_API_KEY: "false"
       ESHU_AUTH_RESOURCE_URI: http://127.0.0.1:${ESHU_E2E_MCP_PORT:-29081}
+      # #9731: the satellite's static discovery needs at least one issuer
+      # (DiscoveryConfigFromEnv gates on both RESOURCE_URI and
+      # AUTHORIZATION_SERVERS). Default to the in-network mock IdP issuer so
+      # ShapeB's discovery doc lists exactly that issuer; override with
+      # ESHU_E2E_MOCK_OIDC_ISSUER_URL to stay in sync with mock-oidc-idp's
+      # MOCK_OIDC_ISSUER_URL above.
+      ESHU_AUTH_AUTHORIZATION_SERVERS: ${ESHU_E2E_MOCK_OIDC_ISSUER_URL:-http://mock-oidc-idp:8080}
       # Query profile for the MCP server, mirroring the eshu key above. Empty
       # by default, which keeps the server's production default (and the
       # production tools/list hiding in #7768/#7933) for every suite. The
