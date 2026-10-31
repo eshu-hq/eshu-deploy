@@ -30,4 +30,11 @@ func TestComposeE2EMcpServerSetsAuthorizationServers(t *testing.T) {
 	if !strings.Contains(value, "mock-oidc-idp:8080") {
 		t.Fatalf("compose env ESHU_AUTH_AUTHORIZATION_SERVERS = %q, want it to name the mock IdP issuer (mock-oidc-idp:8080)", value)
 	}
+	// Pin the ESHU_E2E_MOCK_OIDC_ISSUER_URL override indirection, not just
+	// its default: a hardcoded literal would still name the mock issuer
+	// while silently breaking the stay-in-sync contract with mock-oidc-idp's
+	// MOCK_OIDC_ISSUER_URL above.
+	if !strings.Contains(value, "ESHU_E2E_MOCK_OIDC_ISSUER_URL") {
+		t.Fatalf("compose env ESHU_AUTH_AUTHORIZATION_SERVERS = %q, want the ESHU_E2E_MOCK_OIDC_ISSUER_URL override indirection, not a hardcoded literal", value)
+	}
 }
