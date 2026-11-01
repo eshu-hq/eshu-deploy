@@ -128,6 +128,13 @@ services:
         SOURCE_DATE_EPOCH: ${SOURCE_DATE_EPOCH:-0}
     environment:
       <<: *e2e_runtime_env
+      # eshu-hq/eshu#9760: core must carry the SAME resource URI as the
+      # mcp-server below. The satellite verifies a caller's JWT at the edge and
+      # then forwards the verbatim Authorization header to core on tools/call;
+      # core builds its OIDC bearer resolver only when this is set, and
+      # otherwise answers `unauthenticated`. Keep the expression identical to
+      # mcp-server's (TestComposeE2ECoreCarriesSameAuthResourceURI pins it).
+      ESHU_AUTH_RESOURCE_URI: http://127.0.0.1:${ESHU_E2E_MCP_PORT:-29081}
       # Phase 3 (issue #4971, epic #4962): a file-backed OIDC provider whose
       # sole purpose is satisfying the require_sso guardrail's SECOND
       # precondition — "an admin has completed one SSO sign-in"
