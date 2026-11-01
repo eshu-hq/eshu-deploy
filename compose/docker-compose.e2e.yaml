@@ -128,6 +128,15 @@ services:
         SOURCE_DATE_EPOCH: ${SOURCE_DATE_EPOCH:-0}
     environment:
       <<: *e2e_runtime_env
+      # #9731: core must run the OIDC bearer resolver for the JWTs the
+      # satellite forwards. The satellite verifies a dotted JWT at its own edge
+      # and then sends the caller's Authorization header on to core; only the
+      # resolver, which exists only when ESHU_AUTH_RESOURCE_URI is set, can
+      # admit it. Without this, core answers 401 to every forwarded JWT on a
+      # core-served tools/call while the satellite's own checks all pass. The
+      # value is also the expected token audience, so it matches mcp-server's
+      # exactly (compose_e2e_mcp_auth_test.go pins that).
+      ESHU_AUTH_RESOURCE_URI: http://127.0.0.1:${ESHU_E2E_MCP_PORT:-29081}
       # Phase 3 (issue #4971, epic #4962): a file-backed OIDC provider whose
       # sole purpose is satisfying the require_sso guardrail's SECOND
       # precondition — "an admin has completed one SSO sign-in"
