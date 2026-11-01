@@ -25,7 +25,7 @@ ci-compose: ## docker compose config per documented invocation.
 ci-manifests: ## kustomize builds + helm renders + pinned-schema kubeconform.
 	bash scripts/ci/manifests.sh
 
-ci-go: ## gofmt, vet, tidy check, govulncheck, Go contract suite (pinned toolchain).
+ci-go: ## gofumpt, golangci-lint, 500-line cap, vet, tidy, govulncheck, Go suite with -race (pinned toolchain).
 	bash scripts/ci/go.sh
 
 help: ## List targets.

@@ -1,0 +1,33 @@
+# golangci-lint config for the eshu-deploy go lane (scripts/ci/go.sh).
+# Pinned to golangci-lint v2.12.2 (GOLANGCI_LINT_VERSION in
+# scripts/ci/versions.sh; same binary Eshu and the satellite repos use).
+# Org lint set only: govet, staticcheck (which subsumes gosimple in v2),
+# ineffassign, unused, errcheck; formatter gofumpt. No baselines, no
+# new-from-rev: lint runs on the whole Go tree and findings are fixed, not
+# excluded. No exclusion presets or rules: any exclusion added here needs a
+# stated reason and a linked open issue in the PR that adds it.
+#
+# max-issues-per-linter: 0 and max-same-issues: 0 disable result
+# truncation: the defaults (50/3) hide findings behind the first few. Uncapped
+# output keeps the gate honest.
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - errcheck
+
+formatters:
+  enable:
+    - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: false
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

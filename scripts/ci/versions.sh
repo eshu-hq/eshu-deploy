@@ -38,6 +38,10 @@ HELM_VERSION=v4.2.3
 # (module-proxy + checksum-DB verified). Matches the version the org
 # Go reusable pins.
 GOVULNCHECK_VERSION=v1.9.0
+# golangci-lint, installed by the go lane via `go install ...@version`
+# (module-proxy + checksum-DB verified). Same binary Eshu and the satellite
+# repos pin.
+GOLANGCI_LINT_VERSION=v2.12.2
 # Go toolchain tarball, sha256-checked on download (go.dev/dl publishes the
 # checksum in its release JSON; re-verify there when auditing).
 GO_VERSION=1.26.10

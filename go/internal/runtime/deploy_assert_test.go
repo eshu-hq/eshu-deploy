@@ -44,18 +44,6 @@ type composeService struct {
 	Volumes     []any          `yaml:"volumes"`
 }
 
-func graphRuntimeServices() []string {
-	return []string{
-		"db-migrate",
-		"bootstrap-index",
-		"eshu",
-		"mcp-server",
-		"ingester",
-		"resolution-engine",
-		"projector",
-	}
-}
-
 func readRepositoryFile(t *testing.T, root, relativePath string) string {
 	t.Helper()
 
