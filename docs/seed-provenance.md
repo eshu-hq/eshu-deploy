@@ -48,4 +48,8 @@ bash scripts/verify-compose-helm-runtime-parity.sh
 Release runs `.github/workflows/chart-release.yml`: lint, render, parity
 verify, `helm package`, then `scripts/ci/push-helm-chart.sh` to
 `oci://ghcr.io/<owner>/charts`. Chart versions are immutable and this
-repository moves no tags; see `docs/rollout-recovery.md`.
+repository moves no tags; see `docs/rollout-recovery.md`. A change under
+`helm/eshu` therefore needs a `version:` bump in `Chart.yaml`: the `charts`
+lane runs `scripts/ci/verify-chart-version-bumped.sh`, which compares the
+chart against the published version and fails the PR when the contents differ
+under a version that is already published (eshu-hq/eshu-deploy#8, #27).
