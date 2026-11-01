@@ -710,10 +710,13 @@ org-shape phases plus a negative-leakage module:
 > the verbatim `Authorization` header to core on `tools/call`. Core verifies it again, and builds
 > its OIDC bearer resolver only when `ESHU_AUTH_RESOURCE_URI` is set, so the `eshu` service
 > carries the same `ESHU_AUTH_RESOURCE_URI` as `mcp-server`. Without it a JWT caller passes the
-> satellite's door and then gets `unauthenticated` from core (`eshu-hq/eshu#9760`). Core also
-> refreshes its provider snapshot lazily on a 30 second TTL: the first JWT call after the TTL
-> starts the refresh but is still judged against the old snapshot, so a provider created through
-> the admin drawer needs a retry or a poll before its JWTs are honored, not a fixed 30 second wait.
+> satellite's door and then gets `unauthenticated` from core (`eshu-hq/eshu#9760`). The resolver
+> is built in `go/cmd/api/oidc_bearer_wiring.go` (eshu repo). Core also refreshes its provider
+> snapshot lazily on a 30 second TTL (`defaultTTL` in `go/internal/oidcbearer/resolver.go`, refresh
+> in `currentAndMaybeRebuild` in `go/internal/oidcbearer/cache.go`): the first JWT call after the
+> TTL starts the refresh but is still judged against the old snapshot, so a provider created
+> through the admin drawer needs a retry or a poll before its JWTs are honored, not a fixed 30
+> second wait.
 
 The graph is Neo4j with no published ports; the runner seeds it with `docker compose exec neo4j cypher-shell`.
 
