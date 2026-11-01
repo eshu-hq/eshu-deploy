@@ -42,3 +42,5 @@ GOVULNCHECK_VERSION=v1.9.0
 # checksum in its release JSON; re-verify there when auditing).
 GO_VERSION=1.26.10
 GO_SHA256=ccfe7ae822d2c2f41f4fe7c956199967a4dac22d0ee0d2b2bfdb440aab3b20c5
+
+# fork-pr lane proof, do not merge
