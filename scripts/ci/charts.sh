@@ -27,3 +27,5 @@ bash scripts/test-verify-chart-version-bumped.sh
 bash scripts/ci/verify-chart-version-bumped.sh
 
 printf 'charts: pass\n'
+
+# fork-pr lane proof, do not merge
