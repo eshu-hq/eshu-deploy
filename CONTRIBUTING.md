@@ -35,3 +35,15 @@ Run `make ci` before pushing. It needs: `python3` with
 Pinned downloads (actionlint, kubeconform, kubectl) bootstrap into `.tools/`
 on first run. PR lanes use a read-only token and no secrets, so fork PRs run
 the same gates.
+
+## Proving the lanes catch defects
+
+`bash scripts/deploy-seed-matrix.sh` is a local runner, not a CI gate. For
+each of five seeds (a YAML syntax error, an unrenderable chart template, an
+invalid Compose file, a bad Kubernetes manifest, and a `helm/eshu/values.yaml`
+edit with no chart version bump) it runs the real lane body from
+`scripts/ci/`, requires it to fail and name the seed, removes the seed, and
+requires the lane to pass again. A check whose tool or network is missing
+prints `SKIPPED` with the reason instead of passing. The runner refuses to
+start over leftover seeds or local edits to the files it seeds, and restores
+the tree on every exit path.
