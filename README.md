@@ -29,3 +29,5 @@ reviewed cutover.
 See `docs/seed-provenance.md` for the source SHA, the file inventory, and
 the byte-identical and render-parity checks that prove this seed matches
 the contracted in-tree source.
+
+<!-- lane-selection proof, do not merge -->
