@@ -6,15 +6,25 @@
 # names the seed, removes the seed, and asserts the lane exits zero again. It
 # never compares the tree against a committed count or list.
 #
-# 10 checks (RED + GREEN each):
+# 19 checks (RED + GREEN each, plus one GREEN baseline):
 #   yaml     a YAML syntax error (new file)        -> scripts/ci/lint.sh
 #   chart    a template that cannot render (new)   -> scripts/ci/charts.sh
 #   compose  an unknown top-level Compose key      -> scripts/ci/compose.sh
 #   manifest an unknown field in a Service         -> scripts/ci/manifests.sh
 #   version  a values.yaml edit, no version bump   -> scripts/ci/verify-chart-version-bumped.sh
+#   lint     an unused function (new .go file)     -> scripts/ci/go.sh (golangci-lint run)
+#   format   a gofumpt-only violation (new .go)    -> scripts/ci/go.sh (golangci-lint fmt --diff)
+#   cap      a 501-line .go file (new)             -> scripts/ci/go.sh (500-line cap)
+#   race     a racy test (new _test.go file)       -> scripts/ci/go.sh (go test -race)
 # The compose and manifest seeds edit a file the lane already validates (the
 # lanes name their inputs, so a new file would never be read); the version
-# seed needs the published chart, read anonymously from ghcr.io.
+# seed needs the published chart, read anonymously from ghcr.io. The four Go
+# seeds are new files in go/internal/runtime (package runtime) and run the
+# whole go lane, so they need the lane's network on a cold cache (Go
+# toolchain tarball, `go install` of golangci-lint and govulncheck, the
+# vulnerability database) and a C compiler for -race. The lane downloads the
+# linux/amd64 toolchain, so a non-amd64 host needs the pinned toolchain
+# already unpacked in .tools/ (or the checks report SKIPPED).
 #
 # A check whose tool or network is unavailable prints SKIPPED with the reason
 # and is counted separately; it is never reported as PASS.
@@ -40,7 +50,15 @@ fail=0
 skipped=0
 
 # Files this runner creates (new seeds) and edits (restored from HEAD).
-new_seeds=(zz_seed_yaml.yaml helm/eshu/templates/zz_seed_unrenderable.yaml)
+go_seed_dir=go/internal/runtime
+new_seeds=(
+	zz_seed_yaml.yaml
+	helm/eshu/templates/zz_seed_unrenderable.yaml
+	"$go_seed_dir/zz_seed_lint.go"
+	"$go_seed_dir/zz_seed_format.go"
+	"$go_seed_dir/zz_seed_cap.go"
+	"$go_seed_dir/zz_seed_race_test.go"
+)
 edited=(compose/docker-compose.yaml gitops/manifests/minimal/service.yaml helm/eshu/values.yaml)
 
 cleanup() {
@@ -125,6 +143,7 @@ lane_charts() { bash scripts/ci/charts.sh; }
 lane_compose() { bash scripts/ci/compose.sh; }
 lane_manifests() { bash scripts/ci/manifests.sh; }
 lane_version() { bash scripts/ci/verify-chart-version-bumped.sh; }
+lane_go() { bash scripts/ci/go.sh; }
 
 # --- prerequisites: SKIPPED with a reason, never a silent pass ---
 lint_skip=""
@@ -142,6 +161,16 @@ fi
 manifests_skip="$helm_skip"
 if [ "$(uname -s)/$(uname -m)" != "Linux/x86_64" ]; then
 	manifests_skip="the manifests lane downloads linux/amd64 tools only (host $(uname -s)/$(uname -m))"
+fi
+
+# The go lane downloads the linux/amd64 toolchain unless the pinned one is
+# already unpacked, and -race needs cgo (a C compiler).
+go_skip=""
+go_version="$(. scripts/ci/versions.sh && printf '%s' "$GO_VERSION")"
+if [ "$(uname -s)/$(uname -m)" != "Linux/x86_64" ] && [ ! -x ".tools/go${go_version}/bin/go" ]; then
+	go_skip="the go lane downloads a linux/amd64 toolchain (host $(uname -s)/$(uname -m)); unpack go${go_version} for this host into .tools/go${go_version}"
+elif ! command -v gcc >/dev/null 2>&1 && ! command -v cc >/dev/null 2>&1; then
+	go_skip="no C compiler on PATH (go test -race needs cgo)"
 fi
 
 # The version guard reads the published chart: prove it is readable first.
@@ -214,6 +243,77 @@ else
 	fi
 	git checkout -q -- helm/eshu/values.yaml
 	green_check "version GREEN after restore" lane_version
+fi
+
+# --- Go seeds: each is a new file in package runtime, removed after its check ---
+# go_seed NAME FILE PATTERN: RED must exit non-zero and name PATTERN; after
+# the seed is removed the lane must pass again.
+go_seed() {
+	local name=$1 file=$2 pattern=$3
+	red_check "$name RED on seeded defect" "$pattern" lane_go
+	rm -f "$file"
+	green_check "$name GREEN after seed removal" lane_go
+}
+
+if [ -n "$go_skip" ]; then
+	skip "go lane GREEN on clean tree (baseline)" "$go_skip"
+	for n in lint format cap race; do
+		skip "go $n RED on seeded defect" "$go_skip"
+		skip "go $n GREEN after seed removal" "$go_skip"
+	done
+else
+	# Warm the tool cache and prove the clean tree passes before seeding, so a
+	# RED below is the seed's doing and not a cold-cache or broken-lane failure.
+	green_check "go lane GREEN on clean tree (baseline)" lane_go
+
+	# lint: an unused function; fmt and vet accept it, golangci-lint does not.
+	printf 'package runtime\n\nfunc zzSeedUnused() {}\n' >"$go_seed_dir/zz_seed_lint.go"
+	go_seed "go lint" "$go_seed_dir/zz_seed_lint.go" "zzSeedUnused"
+
+	# format: a blank first line in a function body is gofmt-clean but a
+	# gofumpt violation, so only `golangci-lint fmt --diff` catches it.
+	printf 'package runtime\n\nfunc zzSeedFormat() {\n\n\t_ = 1\n}\n' >"$go_seed_dir/zz_seed_format.go"
+	go_seed "go format" "$go_seed_dir/zz_seed_format.go" "zz_seed_format.go"
+
+	# cap: 501 lines of comments, otherwise clean (gofumpt would regroup
+	# repeated single-line var declarations and trip the format gate first).
+	{
+		echo "package runtime"
+		echo ""
+		for i in $(seq 1 499); do echo "// zz seed filler line $i"; done
+	} >"$go_seed_dir/zz_seed_cap.go"
+	if [ "$(wc -l <"$go_seed_dir/zz_seed_cap.go")" -ne 501 ]; then
+		echo "FAIL: cap seed is not 501 lines"
+		fail=$((fail + 1))
+	fi
+	go_seed "go cap" "$go_seed_dir/zz_seed_cap.go" "zz_seed_cap.go: 501 lines"
+
+	# race: two goroutines increment one int with no synchronisation.
+	cat >"$go_seed_dir/zz_seed_race_test.go" <<'GOSEED'
+package runtime
+
+import (
+	"sync"
+	"testing"
+)
+
+func TestZzSeedRace(t *testing.T) {
+	var wg sync.WaitGroup
+	counter := 0
+	for range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			counter++
+		}()
+	}
+	wg.Wait()
+	if counter < 0 {
+		t.Fatal("unreachable")
+	}
+}
+GOSEED
+	go_seed "go race" "$go_seed_dir/zz_seed_race_test.go" "DATA RACE"
 fi
 
 echo "seed matrix: pass=$pass fail=$fail skipped=$skipped"

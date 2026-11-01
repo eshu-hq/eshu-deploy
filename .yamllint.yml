@@ -5,9 +5,13 @@
 # helm template, and kubeconform judge them instead (charts/manifests lanes).
 # The exclusion is reasoned here, not a parity gap: a validator still reads
 # every excluded file.
+# Also ignored: .tools/**, the gitignored directory where lane scripts unpack
+# pinned tools (the Go toolchain ships YAML test data). It is not repo
+# content, and without this a local `make ci` fails after the go lane ran.
 extends: default
 ignore: |
   helm/eshu/templates/**
+  .tools/**
 rules:
   # Long scalar lines (image digests, JSON env blobs) are content, not style
   # regressions: editors and diffs do not wrap them, and the schema, render,

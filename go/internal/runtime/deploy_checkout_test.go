@@ -40,10 +40,3 @@ func deployComposePath(t *testing.T, name string) string {
 
 	return filepath.Join(deployRepositoryRoot(t), "compose", name)
 }
-
-// deployDocPath joins a docs-relative path under the deploy repo root.
-func deployDocPath(t *testing.T, name string) string {
-	t.Helper()
-
-	return filepath.Join(deployRepositoryRoot(t), "docs", name)
-}

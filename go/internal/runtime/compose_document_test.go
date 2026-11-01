@@ -6,7 +6,6 @@ package runtime
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -50,43 +49,4 @@ func readComposeDocumentWithIncludes(t *testing.T, name string, seen map[string]
 		}
 	}
 	return doc
-}
-
-func readRemoteE2EComposeSource(t *testing.T) string {
-	t.Helper()
-
-	return readComposeSourceWithIncludes(t, "docker-compose.remote-e2e.yaml", map[string]bool{})
-}
-
-func readComposeSourceWithIncludes(t *testing.T, name string, seen map[string]bool) string {
-	t.Helper()
-
-	cleanName := filepath.Clean(name)
-	if seen[cleanName] {
-		return ""
-	}
-	seen[cleanName] = true
-
-	raw := readRepositoryFile(t, deployRepositoryRoot(t), filepath.Join("compose", cleanName))
-	var doc composeDocument
-	if err := yaml.Unmarshal([]byte(raw), &doc); err != nil {
-		t.Fatalf("parse %s: %v", cleanName, err)
-	}
-	var builder strings.Builder
-	builder.WriteString(raw)
-	for _, service := range doc.Services {
-		for key, value := range service.Environment {
-			if rendered, ok := value.(string); ok {
-				builder.WriteByte('\n')
-				builder.WriteString(key)
-				builder.WriteString(": ")
-				builder.WriteString(rendered)
-			}
-		}
-	}
-	for _, included := range doc.Include {
-		builder.WriteByte('\n')
-		builder.WriteString(readComposeSourceWithIncludes(t, filepath.Join(filepath.Dir(cleanName), included), seen))
-	}
-	return builder.String()
 }
