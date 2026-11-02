@@ -316,8 +316,8 @@ From the in-tree webhook listener, `action` is one of `intake_stored`,
 `intake_coalesced`, `intake_ignored`, `intake_rejected`, or `intake_failed`,
 and `auth_path` is `shared_token`, `oidc`, or `none` — which accepted auth
 path, if any, authenticated the request; never a raw header, token, or claim
-value. Other emitters report a smaller action set and `auth_path="n/a"`; see
-[Who emits what](#who-emits-what). The
+value. Other emitters report a different action set and `auth_path="n/a"`;
+see [Who emits what](#who-emits-what). The
 [Telemetry Coverage Contract](../../observability/telemetry-coverage.md) and
 [Metrics — Ingestion and Collectors](../../reference/telemetry/metrics-ingestion-collectors.md)
 hold the full metric contract. A rising `intake_stored`/`intake_coalesced`
@@ -337,8 +337,8 @@ signal — wait for a real tracked-resource change.
 
 #### Who emits what
 
-The AWS and GCP freshness counters have more than one emitter, and each emits a different
-action set. Read the query with that in mind:
+The AWS and GCP freshness counters have more than one emitter, and each emits
+a different action set. Read the query with that in mind:
 
 | Emitter | Actions | `auth_path` |
 | --- | --- | --- |
