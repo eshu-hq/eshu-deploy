@@ -303,7 +303,8 @@ nothing about OIDC support requires removing it.
 
 Trigger a change to a resource matching your feed's asset-type filter (for
 example, add a label to a tracked Compute Engine instance), then check the
-webhook listener's metrics:
+freshness metrics (emitted by the webhook listener, or by the intake host the
+satellite submits to; see [Who emits what](#who-emits-what) below):
 
 ```promql
 sum(rate(eshu_dp_gcp_freshness_events_total[5m])) by (kind, action, auth_path)
@@ -323,6 +324,42 @@ authenticating successfully; `auth_path` confirms which mechanism is actually
 being used, so you can tell an OIDC-only setup is really authenticating over
 OIDC rather than an unexpectedly-still-configured shared token.
 
+#### Who emits what
+
+The same two counters have more than one emitter, and each emits a different
+action set. Read the query with that in mind:
+
+| Emitter | Actions | `auth_path` |
+| --- | --- | --- |
+| In-tree webhook listener (the chart still deploys it) | `intake_stored`, `intake_coalesced`, `intake_ignored`, `intake_rejected`, `intake_failed` | the real path: `shared_token`, `oidc`, or `none` |
+| Core intake host (`webhook-intake`), the satellite's submit target (eshu#9814) | `intake_stored`, `intake_coalesced`, `intake_failed` | always `n/a` |
+| Coordinator handoff loop | handoff and claim actions (`handoff_created`, `handoff_claimed`, `handoff_skipped`, `handoff_failed`, `claim_reclaimed`) | always `n/a` |
+
+`auth_path="n/a"` on the intake host is deliberate: the host is not the hop that
+authenticates the provider's push. Its caller is the satellite, which presents
+the intake bearer, so the host cannot know whether the provider used OIDC or a
+shared token. The host does not emit `intake_rejected` or `intake_ignored`:
+provider-edge rejects (a bad token or an unsupported payload) and the first
+welcome-message ignore happen in the satellite, which emits no metrics yet
+([eshu-webhook#33](https://github.com/eshu-hq/eshu-webhook/issues/33)). Until
+that lands, a real `auth_path`, `intake_rejected`, and `intake_ignored` come
+only from the listener. After a cutover from the listener to the satellite,
+expect those three to go quiet: that is the emitter set changing, not
+deliveries stopping. Keep alerting on `intake_failed` and on the stored and
+coalesced rate, which both emitters share.
+
+A satellite-to-core rejection (a wrong or missing intake bearer, an oversized
+or malformed body, an invalid trigger) is not an `intake_rejected` action. The
+intake host counts it on `eshu_dp_webhook_requests_total`:
+
+```promql
+sum(rate(eshu_dp_webhook_requests_total{provider="gcp_freshness", outcome="rejected"}[5m])) by (reason)
+```
+
+Use `reason` (`auth_failed`, `body_too_large`, `invalid_body`, `empty_body`,
+`malformed_event`, `invalid_trigger`, and similar) to find the fault. Use
+`provider="aws_freshness"` for the AWS feed.
+
 The very first delivery to a newly created subscription is a benign
 Pub/Sub welcome message, not an asset notification; the route acknowledges it
 and records `action="intake_ignored"` rather than treating it as malformed.
@@ -334,8 +371,9 @@ real tracked-resource change.
 Repeated notifications for the same `(parent_scope_kind, parent_scope_id,
 asset_type, location)` tuple within the same queued window collapse into one
 durable trigger row rather than creating duplicate rescans; `action="intake_coalesced"`
-in the metric above reflects this. This is expected behavior when a resource
-changes multiple times in quick succession, not a sign of dropped events.
+in the metric above reflects this, from the listener and from the intake host
+alike. This is expected behavior when a resource changes multiple times in quick
+succession, not a sign of dropped events.
 
 ### Confirm a targeted rescan
 
@@ -372,7 +410,8 @@ first-delivery welcome message return `202`. If Eshu is misconfigured, expect
 dead-lettering (if configured) rather than quiet message loss — that is the
 signal to watch, not an absence of errors.
 
-**All deliveries return 401 / `intake_rejected` with an auth reason.** Check
+**All deliveries return 401 / `intake_rejected` with an auth reason.** On the
+listener, check
 the webhook listener's structured logs for the request's auth path outcome
 (never the token or claim values themselves — see
 [Confirm events arrive](#confirm-events-arrive) for the bounded `auth_path`
@@ -388,6 +427,9 @@ neither path validated — it is not a forwarder problem, since there is no
 forwarder in that topology. If you do run a proxy, ingress, or load balancer
 in front of the webhook-listener pod, confirm it is not stripping the
 `Authorization` or `X-Eshu-GCP-Freshness-Token` header.
+
+For a rejection between the satellite and core, which does not produce
+`intake_rejected`, see [Who emits what](#who-emits-what).
 
 **No events arrive at all.** Confirm the subscription's push endpoint
 resolves and is reachable from Google's Pub/Sub infrastructure (a private or
