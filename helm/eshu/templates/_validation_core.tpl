@@ -30,7 +30,7 @@
 {{- if and .Values.workflowCoordinator.enabled (eq (include "eshu.envMapsSelectNornicDB" (list $globalEnv (default (dict) .Values.workflowCoordinator.env))) "true") -}}
 {{- $nornicdbBackendSelected = true -}}
 {{- end -}}
-{{- $globalOnlyWorkloads := list .Values.schemaBootstrap .Values.awsCloudCollector .Values.azureCloudCollector .Values.cicdRunCollector .Values.componentExtensionCollector .Values.confluenceCollector .Values.gcpCloudCollector .Values.grafanaCollector .Values.jiraCollector .Values.kubernetesLiveCollector .Values.lokiCollector .Values.ociRegistryCollector .Values.packageRegistryCollector .Values.pagerDutyCollector .Values.prometheusMimirCollector .Values.sbomAttestationCollector .Values.securityAlertCollector .Values.tempoCollector .Values.terraformStateCollector .Values.vaultLiveCollector .Values.vulnerabilityIntelligenceCollector .Values.scannerWorker -}}
+{{- $globalOnlyWorkloads := list .Values.schemaBootstrap .Values.awsCloudCollector .Values.cicdRunCollector .Values.componentExtensionCollector .Values.confluenceCollector .Values.gcpCloudCollector .Values.grafanaCollector .Values.jiraCollector .Values.kubernetesLiveCollector .Values.lokiCollector .Values.ociRegistryCollector .Values.packageRegistryCollector .Values.pagerDutyCollector .Values.prometheusMimirCollector .Values.sbomAttestationCollector .Values.securityAlertCollector .Values.tempoCollector .Values.terraformStateCollector .Values.vaultLiveCollector .Values.vulnerabilityIntelligenceCollector .Values.scannerWorker -}}
 {{- range $workload := $globalOnlyWorkloads -}}
 {{- if and $workload.enabled (eq (include "eshu.envMapsSelectNornicDB" (list $globalEnv)) "true") -}}
 {{- $nornicdbBackendSelected = true -}}
