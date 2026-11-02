@@ -311,28 +311,39 @@ sum(rate(eshu_dp_gcp_freshness_events_total[5m])) by (kind, action, auth_path)
 ```
 
 `eshu_dp_gcp_freshness_events_total` is labeled by bounded `kind`
-(`asset_change`, `asset_deleted`, or `unknown`), `action`
-(`intake_stored`, `intake_coalesced`, `intake_ignored`, `intake_rejected`,
-`intake_failed`), and `auth_path` (`shared_token`, `oidc`, or `none` — which
-accepted auth path, if any, authenticated the request; never a raw header,
-token, or claim value). See
+(`asset_change`, `asset_deleted`, or `unknown`), `action`, and `auth_path`.
+From the in-tree webhook listener, `action` is one of `intake_stored`,
+`intake_coalesced`, `intake_ignored`, `intake_rejected`, or `intake_failed`,
+and `auth_path` is `shared_token`, `oidc`, or `none` — which accepted auth
+path, if any, authenticated the request; never a raw header, token, or claim
+value. Other emitters report a smaller action set and `auth_path="n/a"`; see
+[Who emits what](#who-emits-what). The
 [Telemetry Coverage Contract](../../observability/telemetry-coverage.md) and
 [Metrics — Ingestion and Collectors](../../reference/telemetry/metrics-ingestion-collectors.md)
-for the full metric contract. A rising `intake_stored`/`intake_coalesced`
-count after a tracked change confirms deliveries are reaching the endpoint and
-authenticating successfully; `auth_path` confirms which mechanism is actually
-being used, so you can tell an OIDC-only setup is really authenticating over
-OIDC rather than an unexpectedly-still-configured shared token.
+hold the full metric contract. A rising `intake_stored`/`intake_coalesced`
+count after a tracked change confirms deliveries are reaching the endpoint,
+whichever emitter reports it. On the listener, that count also means the
+requests authenticated successfully, and `auth_path` confirms which mechanism
+is actually being used, so you can tell an OIDC-only setup is really
+authenticating over OIDC rather than an unexpectedly-still-configured shared
+token. Behind the satellite, authentication happens in the satellite and
+`auth_path` reads `n/a`.
+
+The very first delivery to a newly created subscription is a benign
+Pub/Sub welcome message, not an asset notification; the route acknowledges it
+and, on the listener, records `action="intake_ignored"` rather than treating it
+as malformed. Do not use that first delivery alone as your confirmation
+signal — wait for a real tracked-resource change.
 
 #### Who emits what
 
-The same two counters have more than one emitter, and each emits a different
+The AWS and GCP freshness counters have more than one emitter, and each emits a different
 action set. Read the query with that in mind:
 
 | Emitter | Actions | `auth_path` |
 | --- | --- | --- |
 | In-tree webhook listener (the chart still deploys it) | `intake_stored`, `intake_coalesced`, `intake_ignored`, `intake_rejected`, `intake_failed` | the real path: `shared_token`, `oidc`, or `none` |
-| Core intake host (`webhook-intake`), the satellite's submit target (eshu#9814) | `intake_stored`, `intake_coalesced`, `intake_failed` | always `n/a` |
+| Core intake host (`webhook-intake`), the satellite's submit target; needs an eshu build that includes eshu-hq/eshu#9829 (eshu#9814) | `intake_stored`, `intake_coalesced`, `intake_failed` | always `n/a` |
 | Coordinator handoff loop | handoff and claim actions (`handoff_created`, `handoff_claimed`, `handoff_skipped`, `handoff_failed`, `claim_reclaimed`) | always `n/a` |
 
 `auth_path="n/a"` on the intake host is deliberate: the host is not the hop that
@@ -359,12 +370,6 @@ sum(rate(eshu_dp_webhook_requests_total{provider="gcp_freshness", outcome="rejec
 Use `reason` (`auth_failed`, `body_too_large`, `invalid_body`, `empty_body`,
 `malformed_event`, `invalid_trigger`, and similar) to find the fault. Use
 `provider="aws_freshness"` for the AWS feed.
-
-The very first delivery to a newly created subscription is a benign
-Pub/Sub welcome message, not an asset notification; the route acknowledges it
-and records `action="intake_ignored"` rather than treating it as malformed.
-Do not use that first delivery alone as your confirmation signal — wait for a
-real tracked-resource change.
 
 ### Confirm coalescing
 
