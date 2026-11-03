@@ -18,7 +18,8 @@ ingester
 projector
 resolution-engine
 workflow-coordinator
-webhook-listener
+webhook-satellite
+webhook-intake
 collector-terraform-state
 collector-oci-registry
 collector-package-registry

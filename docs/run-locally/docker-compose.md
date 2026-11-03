@@ -10,11 +10,11 @@ fast rebuilds without containers.
 | Compose file or profile | What it starts | Use it when |
 | --- | --- | --- |
 | `docker-compose.yaml` | Default stack: NornicDB, Postgres, migration, workspace setup, bootstrap indexing, API, MCP, ingester, reducer, and an always-on projector. | You want the normal local product stack. |
-| `docker-compose.neo4j.yml` | Neo4j compatibility stack. Includes the workflow-coordinator profile but not the default webhook-listener profile. | You need Neo4j compatibility checks. |
+| `docker-compose.neo4j.yml` | Neo4j compatibility stack. Includes the workflow-coordinator profile but not the default webhook profile. | You need Neo4j compatibility checks. |
 | `docker-compose.telemetry.yml` | Jaeger, OpenTelemetry collector, and OTLP export settings. | You need local traces or metrics export. |
 | `--profile workflow-coordinator` | Adds the workflow coordinator to the default or Neo4j stack. | You are testing collector claims, scheduling, or control-plane behavior. |
-| `--profile webhook-listener` | Adds the webhook listener to the default NornicDB stack. | You are testing webhook-driven freshness or external event ingestion locally. |
-| `docker-compose.remote-e2e.yaml` | Standalone remote proof stack with runtime services, preflight, workflow coordination, webhook listener, and cloud/package/registry collectors. | You are on an EC2 or VPN-attached host and need a full remote collector proof. |
+| `--profile webhook` | Adds the webhook satellite (provider edge) and intake host (durable trigger store) to the default NornicDB stack. | You are testing webhook-driven freshness or external event ingestion locally. |
+| `docker-compose.remote-e2e.yaml` | Standalone remote proof stack with runtime services, preflight, workflow coordination, webhook satellite plus intake host, and cloud/package/registry collectors. | You are on an EC2 or VPN-attached host and need a full remote collector proof. |
 | `docker-compose.demo.yaml` | Standalone, credential-free demo stack: corpus staging, one-shot cassette collectors, a deferred-relationship maintenance orchestrator, API, and MCP. Answers the five `specs/demo-first-answers.v1.yaml` questions. | You want a working correlated-graph demo with zero credential env, or you are proving the first-five-minutes onboarding path. |
 | `docker-compose.e2e.yaml` | Standalone, minimal fresh-stack for the browser SSO auth E2E suite: Neo4j (the digest-pinned image from `docker-compose.neo4j.yml`), Postgres, migration, workspace setup, the API, and a synthetic mock OIDC IdP. No ingester, reducer, projector, or collectors, and zero seeded local identities. | You are proving the SSO login flow against a fresh, zero-corpus stack (issue #4971). |
 
@@ -302,7 +302,8 @@ enable a profile.
 | --- | --- | --- | --- |
 | `workflow-coordinator` | `workflow-coordinator` | Collector scheduling and claim ownership control plane on `18082`, with metrics on `19469`. | You need to inspect scheduler state or run an active claim proof. |
 | `component-extension-collector` | `component-extension-collector` | Process-backed component extension worker on `18084`, with metrics on `19470`. | You need a fenced process-adapter component claim proof after the coordinator has planned work. |
-| `webhook-listener` | `webhook-listener` | HTTP intake for GitHub, GitLab, Bitbucket, AWS, PagerDuty, and Jira freshness events on `18083`. | You need to test webhook-driven refresh behavior. |
+| `webhook` | `webhook-satellite` | Provider edge for GitHub, GitLab, Bitbucket, AWS, PagerDuty, and Jira freshness events on `18083`; verifies signatures and submits to the intake host. | You need to test webhook-driven refresh behavior. |
+| `webhook` | `webhook-intake` | Core intake host: authenticates the satellite and persists durable triggers in Postgres. Serves no provider-facing routes. | You need to test webhook-driven refresh behavior. |
 
 Start the workflow coordinator in its default dark mode:
 
@@ -382,7 +383,7 @@ docker compose -f docker-compose.neo4j.yml up --build
 
 Service shape and host ports match the default stack except the graph service
 is `neo4j`, `ESHU_GRAPH_BACKEND=neo4j`, and the database is `neo4j`. It adds the
-`workflow-coordinator` profile, omits `webhook-listener`, and forwards
+`workflow-coordinator` profile, omits `webhook`, and forwards
 `ESHU_CANONICAL_WRITE_TIMEOUT` (the transaction timeout, `300s` default on Neo4j since #7471)
 and `ESHU_GRAPH_WRITE_MAX_IN_FLIGHT` (default 8, measured on NornicDB only) to
 every graph writer. Use it for Neo4j compatibility, not local evaluation.

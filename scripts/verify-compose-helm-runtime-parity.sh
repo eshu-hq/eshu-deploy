@@ -99,7 +99,7 @@ for service in nornicdb postgres db-migrate workspace-setup bootstrap-index eshu
     require_line "${default_services}" "${service}" "missing default Compose service"
 done
 
-for service in eshu mcp-server ingester projector resolution-engine workflow-coordinator webhook-listener \
+for service in eshu mcp-server ingester projector resolution-engine workflow-coordinator webhook-satellite webhook-intake \
     collector-terraform-state collector-oci-registry collector-package-registry \
     collector-sbom-attestation collector-security-alerts collector-vulnerability-intelligence \
     collector-aws-cloud scanner-worker; do

@@ -29,8 +29,8 @@ x-aws-env: &remote_e2e_aws_env
   AWS_REGION: ${ESHU_AWS_E2E_REGION:?set ESHU_AWS_E2E_REGION}
   AWS_DEFAULT_REGION: ${ESHU_AWS_E2E_REGION:?set ESHU_AWS_E2E_REGION}
   AWS_EC2_METADATA_DISABLED: ${AWS_EC2_METADATA_DISABLED:-false}
-  NO_PROXY: 169.254.169.254,localhost,127.0.0.1,nornicdb,postgres,webhook-listener
-  no_proxy: 169.254.169.254,localhost,127.0.0.1,nornicdb,postgres,webhook-listener
+  NO_PROXY: 169.254.169.254,localhost,127.0.0.1,nornicdb,postgres,webhook-satellite,webhook-intake
+  no_proxy: 169.254.169.254,localhost,127.0.0.1,nornicdb,postgres,webhook-satellite,webhook-intake
 
 services:
   bootstrap-index:

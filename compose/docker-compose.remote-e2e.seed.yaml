@@ -65,12 +65,12 @@ services:
         }
         JSON
         )
-          curl -fsS -X POST http://webhook-listener:8080/webhooks/aws/eventbridge \
+          curl -fsS -X POST http://webhook-satellite:8080/webhooks/aws/eventbridge \
             -H "X-Eshu-AWS-Freshness-Token: $${ESHU_AWS_FRESHNESS_TOKEN}" \
             -H "Content-Type: application/json" \
             --data "$${payload}" >/dev/null
           echo "seeded AWS freshness trigger for $${service}"
         done
     depends_on:
-      webhook-listener:
-        condition: service_healthy
+      webhook-satellite:
+        condition: service_started
