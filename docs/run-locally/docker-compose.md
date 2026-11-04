@@ -305,6 +305,11 @@ enable a profile.
 | `webhook` | `webhook-satellite` | Provider edge for GitHub, GitLab, Bitbucket, AWS, PagerDuty, and Jira freshness events on `18083`; verifies signatures and submits to the intake host. | You need to test webhook-driven refresh behavior. |
 | `webhook` | `webhook-intake` | Core intake host: authenticates the satellite and persists durable triggers in Postgres. Serves no provider-facing routes. | You need to test webhook-driven refresh behavior. |
 
+Port rename (#9950): the old `webhook-listener` service is gone with the
+extracted satellite. `ESHU_WEBHOOK_LISTENER_HTTP_PORT` no longer has any effect;
+set `ESHU_WEBHOOK_SATELLITE_HTTP_PORT` (default `18083`) to move the satellite
+publish port.
+
 Start the workflow coordinator in its default dark mode:
 
 ```bash

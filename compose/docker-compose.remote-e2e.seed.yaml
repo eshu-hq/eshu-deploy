@@ -65,10 +65,24 @@ services:
         }
         JSON
         )
-          curl -fsS -X POST http://webhook-satellite:8080/webhooks/aws/eventbridge \
-            -H "X-Eshu-AWS-Freshness-Token: $${ESHU_AWS_FRESHNESS_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --data "$${payload}" >/dev/null
+          # The satellite has no healthcheck (distroless), so service_started only
+          # orders container start, not readiness: retry the POST until the edge
+          # answers or the bound below is hit.
+          seeded=false
+          for attempt in $$(seq 1 30); do
+            if curl -fsS -X POST http://webhook-satellite:8080/webhooks/aws/eventbridge \
+              -H "X-Eshu-AWS-Freshness-Token: $${ESHU_AWS_FRESHNESS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data "$${payload}" >/dev/null; then
+              seeded=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$${seeded}" != true ]; then
+            echo "seed POST failed after 30 attempts for $${service}" >&2
+            exit 1
+          fi
           echo "seeded AWS freshness trigger for $${service}"
         done
     depends_on:
