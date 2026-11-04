@@ -172,15 +172,24 @@ bytes, and source facts emitted.
 
 `vulnerabilityIntelligenceCollector.enabled=true` renders a separate
 `eshu-vulnerability-intelligence-collector` Deployment that claims
-`vulnerability_intelligence` work from the workflow coordinator and fetches
-bounded vulnerability source snapshots (CISA KEV, FIRST EPSS, NVD windows, OSV
-package-version queries, GitLab Gemnasium, GHSA) or derived owned-package
-targets.
+`vulnerability_intelligence` work from the workflow coordinator. No in-tree
+producer remains (eshu-hq/eshu#9999). The Eshu image stays the host and runs the
+component-extension worker. A seed init container copies the collector binary
+and manifest out of the digest-pinned
+`ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence` release image, then
+a reconcile init container grants, installs, and enables the component in a
+pod-local registry. The collector fetches bounded CISA KEV, FIRST EPSS, NVD, and
+OSV snapshots, or derived owned-package targets.
 
 Defaults: disabled, one replica, `instanceId=vulnerability-intelligence-primary`,
-`pollInterval=2s`, empty `claimLeaseTTL`/`heartbeatInterval` (binary defaults
-apply), and Kubernetes defaults requesting `cpu=250m`, `memory=512Mi` and
-limiting the pod at `cpu=1000m`, `memory=2Gi`.
+`pollInterval=2s`, empty `claimLeaseTTL`/`heartbeatInterval` (worker defaults
+apply), the v0.1.3 `seed.image`, grants for the eleven `vulnerability.*` kinds the
+manifest declares, one CISA KEV target in `config.targets`, and Kubernetes
+defaults requesting `cpu=250m`, `memory=512Mi` and limiting the pod at
+`cpu=1000m`, `memory=2Gi`. The extension host stops the collector when the
+claim's first lease expires, so raise `claimLeaseTTL` for NVD windows and large
+derived batches. See
+[Set The Claim Lease](run-an-extracted-collector.md#set-the-claim-lease).
 
 The chart rejects vulnerability-intelligence rendering unless:
 
@@ -191,13 +200,32 @@ The chart rejects vulnerability-intelligence rendering unless:
   `vulnerabilityIntelligenceCollector.instanceId`.
 - `workflowCoordinator.collectorInstances` contains an enabled,
   claim-driven `vulnerability_intelligence` instance.
+- `seed.image` is pinned by digest alone. A tag is refused.
+- `componentExtensionCollector.trustMode=allowlist`, its `allowIds` lists
+  `componentId`, and its `allowPublishers` lists `eshu-hq`.
+- `config.targets` lists every `scope_id` the coordinator's matching instance
+  plans. The coordinator plans from `workflowCoordinator.collectorInstances`, and
+  the worker serves from `config`, so a target only the coordinator holds would
+  fail its claims as `unknown_scope`.
+- `config` holds no key or value that looks like a credential.
+
+The chart writes `collector_instance_id` into the activation from `instanceId`,
+because the collector ends a claim as terminal `invalid_config` without it.
+
+The chart cannot check core compatibility at render time. The v0.1.3 manifest
+declares `compatibleCore: ">=0.0.5 <0.2.0"`, and the chart's default `image.tag`
+is outside that range, so the reconcile init container exits with
+`component is incompatible with Eshu core` and the pod stays in `Init:Error`.
+Set `componentExtensionCollector.coreVersion` to the version the image really
+runs, or to `dev` for a build with no release version.
 
 Source targets are bounded by design: only explicit CVE IDs, source-level
 snapshots (CISA KEV, FIRST EPSS), OSV package-version queries, NVD modified
 windows, or derived owned-package targets are accepted. Credentials such as
-NVD API keys are referenced by `api_key_env` in the instance configuration and
-provided to the pod through `vulnerabilityIntelligenceCollector.extraEnv`
-Secret references; never embed tokens in chart values.
+NVD API keys are named by `api_key_env` in `config.targets` and provided to the
+pod through `vulnerabilityIntelligenceCollector.extraEnv` Secret references;
+the collector process inherits the worker's environment. Never embed tokens in
+chart values.
 
 Observability Evidence: the Deployment exposes `/healthz`, `/readyz`,
 `/metrics`, and `/admin/status`. Collector metrics include queue wait, fetch

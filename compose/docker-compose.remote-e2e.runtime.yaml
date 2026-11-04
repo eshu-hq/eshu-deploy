@@ -205,27 +205,47 @@ services:
         condition: service_healthy
 
   collector-vulnerability-intelligence:
+    # Extracted satellite (eshu-hq/eshu#9999): the in-tree producer is deleted.
+    # The Eshu image stays the host and runs the component-extension worker;
+    # the seed and reconcile one-shots in docker-compose.remote-e2e.seed.yaml
+    # put the digest-pinned satellite in the component home first.
     build:
       context: .
       dockerfile: Dockerfile
     restart: on-failure
-    command: ["/usr/local/bin/eshu-collector-vulnerability-intelligence"]
+    command: ["/usr/local/bin/eshu-collector-component-extension"]
     ports:
       - "${ESHU_COLLECTOR_VULNERABILITY_INTELLIGENCE_METRICS_PORT:-19476}:9464"
     environment:
       <<: [*remote_e2e_runtime_env, *remote_e2e_collector_env]
+      ESHU_COMPONENT_HOME: /components
+      ESHU_COMPONENT_TRUST_MODE: allowlist
+      ESHU_COMPONENT_ALLOW_IDS: dev.eshu.collector.vulnerability_intelligence
+      ESHU_COMPONENT_ALLOW_PUBLISHERS: eshu-hq
+      ESHU_COMPONENT_COLLECTOR_INSTANCE_ID: remote-e2e-vulnerability-intelligence
+      ESHU_COMPONENT_COLLECTOR_OWNER_ID: remote-e2e-vulnerability-worker
+      ESHU_COMPONENT_COLLECTOR_SCOPE_KIND: vulnerability_intelligence
+      ESHU_COMPONENT_COLLECTOR_POLL_INTERVAL: ${ESHU_VULNERABILITY_INTELLIGENCE_POLL_INTERVAL:-2s}
+      ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL: ${ESHU_VULNERABILITY_INTELLIGENCE_CLAIM_LEASE_TTL:-60s}
+      ESHU_COMPONENT_COLLECTOR_HEARTBEAT_INTERVAL: ${ESHU_VULNERABILITY_INTELLIGENCE_HEARTBEAT_INTERVAL:-10s}
       ESHU_VULNERABILITY_INTELLIGENCE_COLLECTOR_INSTANCE_ID: remote-e2e-vulnerability-intelligence
       ESHU_VULNERABILITY_INTELLIGENCE_COLLECTOR_OWNER_ID: remote-e2e-vulnerability-worker
       ESHU_VULNERABILITY_INTELLIGENCE_POLL_INTERVAL: ${ESHU_VULNERABILITY_INTELLIGENCE_POLL_INTERVAL:-2s}
       ESHU_VULNERABILITY_INTELLIGENCE_CLAIM_LEASE_TTL: ${ESHU_VULNERABILITY_INTELLIGENCE_CLAIM_LEASE_TTL:-60s}
       ESHU_VULNERABILITY_INTELLIGENCE_HEARTBEAT_INTERVAL: ${ESHU_VULNERABILITY_INTELLIGENCE_HEARTBEAT_INTERVAL:-10s}
       NVD_API_KEY: ${ESHU_NVD_API_KEY:-}
+    volumes:
+      - vulnerability_intelligence_component_home:/components
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
       interval: 15s
       timeout: 5s
       retries: 10
     depends_on:
+      collector-vulnerability-intelligence-seed:
+        condition: service_completed_successfully
+      collector-vulnerability-intelligence-reconcile:
+        condition: service_completed_successfully
       projector:
         condition: service_healthy
       workflow-coordinator:
@@ -464,3 +484,6 @@ services:
         condition: service_completed_successfully
       db-migrate:
         condition: service_completed_successfully
+
+volumes:
+  vulnerability_intelligence_component_home:

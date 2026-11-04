@@ -327,6 +327,7 @@
 {{- if not $vulnCoordinatorMatch -}}
 {{- fail "workflowCoordinator.collectorInstances must contain an enabled claim-driven vulnerability_intelligence instance when vulnerabilityIntelligenceCollector.enabled=true" -}}
 {{- end -}}
+{{- include "eshu.validate.vulnerabilityIntelligenceCollectorActivation" . -}}
 {{- end -}}
 {{- if .Values.sbomAttestationCollector.enabled -}}
 {{- $sbomCoordinatorMatch := false -}}
