@@ -158,8 +158,13 @@ ID or version is missing or unlisted in the site allowlist, or when the
 activation host scope is absent. A vulnerability-intelligence rendering
 additionally fails on those same seed, allowlist, and host-scope conditions, when
 `componentExtensionCollector.trustMode` is not `allowlist`, when
-`allowPublishers` omits `eshu-hq`, when `config.targets` omits a scope the
-coordinator plans, or when `config` holds a credential-shaped key or value.
+`allowPublishers` omits `eshu-hq`, when `componentExtensionCollector.coreVersion`
+is empty, when `config.targets` or the derive sections in `config` do not cover
+what the coordinator plans, when the coordinator's instance plans a scope the
+satellite cannot resolve (`slot_scopes`, `derive_from_findings`, or rolling NVD
+windows), when `instanceId` is not a DNS label, when the heartbeat is not shorter
+than the lease, or when `config` or `process` holds a credential-shaped key or
+value.
 Component extension rendering
 fails if the workflow coordinator is not active with claims enabled, if
 `componentHome` is empty, if trust mode is not `allowlist`, if the extension
