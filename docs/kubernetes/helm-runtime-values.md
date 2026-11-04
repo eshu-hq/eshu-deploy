@@ -172,15 +172,24 @@ bytes, and source facts emitted.
 
 `vulnerabilityIntelligenceCollector.enabled=true` renders a separate
 `eshu-vulnerability-intelligence-collector` Deployment that claims
-`vulnerability_intelligence` work from the workflow coordinator and fetches
-bounded vulnerability source snapshots (CISA KEV, FIRST EPSS, NVD windows, OSV
-package-version queries, GitLab Gemnasium, GHSA) or derived owned-package
-targets.
+`vulnerability_intelligence` work from the workflow coordinator. No in-tree
+producer remains (eshu-hq/eshu#9999). The Eshu image stays the host and runs the
+component-extension worker. A seed init container copies the collector binary
+and manifest out of the digest-pinned
+`ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence` release image, then
+a reconcile init container grants, installs, and enables the component in a
+pod-local registry. The collector fetches bounded CISA KEV, FIRST EPSS, NVD, and
+OSV snapshots, or OSV targets derived from owned packages and installed evidence.
 
 Defaults: disabled, one replica, `instanceId=vulnerability-intelligence-primary`,
-`pollInterval=2s`, empty `claimLeaseTTL`/`heartbeatInterval` (binary defaults
-apply), and Kubernetes defaults requesting `cpu=250m`, `memory=512Mi` and
-limiting the pod at `cpu=1000m`, `memory=2Gi`.
+`pollInterval=2s`, empty `claimLeaseTTL`/`heartbeatInterval` (worker defaults
+apply), the v0.1.3 `seed.image`, grants for the eleven `vulnerability.*` kinds the
+manifest declares, one CISA KEV target in `config.targets`, and Kubernetes
+defaults requesting `cpu=250m`, `memory=512Mi` and limiting the pod at
+`cpu=1000m`, `memory=2Gi`. The extension host stops the collector when the
+claim's first lease expires, so raise `claimLeaseTTL` for NVD windows and large
+derived batches. See
+[Set The Claim Lease](run-an-extracted-collector.md#set-the-claim-lease).
 
 The chart rejects vulnerability-intelligence rendering unless:
 
@@ -191,18 +200,74 @@ The chart rejects vulnerability-intelligence rendering unless:
   `vulnerabilityIntelligenceCollector.instanceId`.
 - `workflowCoordinator.collectorInstances` contains an enabled,
   claim-driven `vulnerability_intelligence` instance.
+- `seed.image` is pinned by digest alone. A tag is refused.
+- `componentExtensionCollector.trustMode=allowlist`, its `allowIds` lists
+  `componentId`, and its `allowPublishers` lists `eshu-hq`.
+- `config.targets` lists every `scope_id` the coordinator's matching instance
+  plans. The coordinator plans from `workflowCoordinator.collectorInstances`, and
+  the worker serves from `config`, so a target only the coordinator holds would
+  fail its claims as `unknown_scope`.
+- `config` covers each derive section the coordinator enables. When
+  `derive_from_owned_packages` or `derive_from_installed_evidence` is on there,
+  `config` must enable derived `osv` targets, and the union of its enabled derive
+  sections must list every ecosystem the coordinator's section plans. A blank
+  list on the coordinator means `npm` for that section. The satellite defaults
+  only an empty union to `npm`, so list ecosystems explicitly.
+- The coordinator's matching instance plans no scope satellite v0.1.3 cannot
+  resolve: `derive_from_owned_packages.slot_scopes`, `derive_from_findings`, and
+  `derive_nvd_rolling_windows` with an NVD modified-window target.
+- `instanceId` is a lowercase DNS label of at most 53 characters, because it names
+  the init containers.
+- `claimLeaseTTL` and `heartbeatInterval` are positive durations, and the
+  heartbeat is shorter than the lease. The check reads this block's values and
+  the worker's defaults (60s and 20s), because this worker never reads
+  `componentExtensionCollector.claimLeaseTTL` or `.heartbeatInterval`.
+- `config` and `process` hold no key or value that looks like a credential. That
+  covers each `process.env` entry, because the activation file is a ConfigMap.
+- `componentExtensionCollector.coreVersion` is set.
+
+The chart writes `collector_instance_id` into the activation from `instanceId`,
+because the collector ends a claim as terminal `invalid_config` without it.
+
+`coreVersion` is required because the v0.1.3 manifest declares
+`compatibleCore: ">=0.0.5 <0.2.0"`, and with no value the reconcile init container
+checks the version built into the image. The default `image.tag`,
+`v0.0.3-pre-release-18`, sorts below that range, and a commit-SHA tag is not a
+semantic version, so install refuses both and the pod stays in `Init:Error`.
+Setting `coreVersion` to the default tag fails the same way. These values pass:
+
+- `dev`, which skips the range check. The reference deployment uses it. It skips
+  nothing else, so it does not show that the image can host this satellite. Use
+  it with an image you have run this satellite on.
+- A version inside the range, such as `0.1.0`, when `image.tag` is a release in
+  that range.
+
+The chart checks only that the value is set. It cannot compare it with the image
+or the manifest, so a value outside the range still renders and stops the pod in
+`Init:Error` with `component is incompatible with Eshu core`.
 
 Source targets are bounded by design: only explicit CVE IDs, source-level
 snapshots (CISA KEV, FIRST EPSS), OSV package-version queries, NVD modified
-windows, or derived owned-package targets are accepted. Credentials such as
-NVD API keys are referenced by `api_key_env` in the instance configuration and
-provided to the pod through `vulnerabilityIntelligenceCollector.extraEnv`
-Secret references; never embed tokens in chart values.
+windows, or OSV targets derived from owned packages and installed evidence are
+accepted. Credentials such as
+NVD API keys are named by `api_key_env` in `config.targets` and provided to the
+pod through `vulnerabilityIntelligenceCollector.extraEnv` Secret references;
+the collector process inherits the worker's environment. Never embed tokens in
+chart values.
 
 Observability Evidence: the Deployment exposes `/healthz`, `/readyz`,
-`/metrics`, and `/admin/status`. Collector metrics include queue wait, fetch
-duration, retries, advisory source freshness, dead letters, and emitted
-`vulnerability.*` facts.
+`/metrics`, and `/admin/status`. The extension host, not the collector process,
+reports each claim on the `eshu_dp_component_extension_*` family:
+`results_total` (by `state` and `failure_class`, so `unknown_scope` shows here),
+`status_records_total`, `reported_facts_total`, `reported_warnings_total`,
+`source_latency_seconds`, and `retry_after_seconds`. The shared claim loop adds
+`eshu_dp_workflow_claim_wait_seconds`, `eshu_dp_workflow_claim_retries_total`,
+`eshu_dp_workflow_claim_attempt_budget_exhausted_total`,
+`eshu_dp_workflow_claim_provider_throttle_total`, and
+`eshu_dp_workflow_claim_facts_emitted_total`. Source-state writes count on
+`eshu_dp_vulnerability_source_state_stale_writes_skipped_total` and
+`eshu_dp_vulnerability_source_state_write_failures_total`. Producer grants count
+on `eshu_dp_component_producer_grant_decisions_total`.
 
 ## Repository Sync
 

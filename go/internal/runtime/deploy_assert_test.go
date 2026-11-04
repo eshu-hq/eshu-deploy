@@ -39,6 +39,7 @@ type composeService struct {
 	Ports       []any          `yaml:"ports"`
 	Profiles    []string       `yaml:"profiles"`
 	Restart     string         `yaml:"restart"`
+	User        string         `yaml:"user"`
 	DependsOn   any            `yaml:"depends_on"`
 	Environment map[string]any `yaml:"environment"`
 	Volumes     []any          `yaml:"volumes"`

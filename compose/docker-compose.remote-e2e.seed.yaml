@@ -1,4 +1,5 @@
-# Remote E2E optional AWS freshness seed service.
+# Remote E2E seed services: the optional AWS freshness seed, and the one-shots
+# that install the vulnerability satellite before its worker starts.
 # Use docker-compose.remote-e2e.yaml as the operator entrypoint.
 
 services:
@@ -88,3 +89,138 @@ services:
     depends_on:
       webhook-satellite:
         condition: service_started
+
+  # One-shot: copy the collector binary and manifest out of the digest-pinned
+  # satellite image (v0.1.3) into the shared component home. Runs as root so the
+  # seeded files land in the fresh root-owned named volume; the reconcile step
+  # hands ownership to the runtime uid when the registry is ready.
+  collector-vulnerability-intelligence-seed:
+    image: ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:d0d0f289721e87e941e0fcb6cf4091c96a62b571ce533d956a5ef982490bce5d
+    restart: "no"
+    user: "0:0"
+    command: ["/usr/local/bin/collector", "seed", "--dest", "/components/runtime/remote-e2e-vulnerability-intelligence", "--image-ref", "ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:d0d0f289721e87e941e0fcb6cf4091c96a62b571ce533d956a5ef982490bce5d"]
+    volumes:
+      - vulnerability_intelligence_component_home:/components
+
+  # One-shot: verify the seed, write the activation file, then grant, install
+  # and enable the component (host image, has sh). The worker starts only after
+  # this exits 0. The coordinator plans from ESHU_COLLECTOR_INSTANCES_JSON in
+  # the runtime fragment and the worker serves from the activation file below,
+  # so keep the two configs equal; a go/internal/runtime test compares them.
+  collector-vulnerability-intelligence-reconcile:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "no"
+    user: "0:0"
+    environment:
+      ESHU_COMPONENT_HOME: /components
+      COMPONENT_ID: dev.eshu.collector.vulnerability_intelligence
+      COMPONENT_VERSION: 0.1.3
+      INSTANCE_ID: remote-e2e-vulnerability-intelligence
+      MODE: scheduled
+      CONFIG_PATH: /components/activations/remote-e2e-vulnerability-intelligence.yaml
+      ALLOW_IDS: dev.eshu.collector.vulnerability_intelligence
+      ALLOW_PUBLISHERS: eshu-hq
+    volumes:
+      - vulnerability_intelligence_component_home:/components
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        home="$${ESHU_COMPONENT_HOME:?ESHU_COMPONENT_HOME must be set}"
+        runtime="$${home}/runtime/$${INSTANCE_ID:?INSTANCE_ID must be set}"
+        if [ ! -x "$${runtime}/collector" ] || [ ! -s "$${runtime}/manifest.yaml" ]; then
+          echo "seed image did not write $${runtime}/collector and $${runtime}/manifest.yaml" >&2
+          exit 1
+        fi
+        mkdir -p "$$(dirname "$${CONFIG_PATH:?CONFIG_PATH must be set}")"
+        cat > "$${CONFIG_PATH}" <<'ACTIVATION'
+        config:
+          collector_instance_id: remote-e2e-vulnerability-intelligence
+          derive_from_owned_packages:
+            enabled: true
+            sources: ["osv"]
+            ecosystems: ["npm"]
+            planning_mode: single_pass
+            target_limit: ${ESHU_REMOTE_E2E_DERIVED_TARGET_LIMIT:-100}
+          targets:
+            - source: first_epss
+              scope_id: "vuln-intel://first/epss"
+              cve_ids: ["${ESHU_VULNERABILITY_E2E_CVE_ID:-CVE-2021-44228}"]
+            - source: cisa_kev
+              scope_id: "vuln-intel://cisa/kev"
+            - source: osv
+              scope_id: "vuln-intel://osv/maven/log4j-core"
+              ecosystem: maven
+              queries:
+                - package:
+                    name: "org.apache.logging.log4j:log4j-core"
+                    ecosystem: Maven
+                  version: "2.14.1"
+            - source: nvd
+              scope_id: "vuln-intel://nvd/cve"
+              cve_ids: ["${ESHU_VULNERABILITY_E2E_CVE_ID:-CVE-2021-44228}"]
+              results_per_page: 100
+              api_key_env: NVD_API_KEY
+        host:
+          scope:
+            id: "vuln-intel://cisa/kev"
+            kind: vulnerability_intelligence
+          sourceSystem: vulnerability_intelligence
+        process:
+          args:
+            - --sdk-stdio
+          command: /components/runtime/remote-e2e-vulnerability-intelligence/collector
+          stdout_limit_bytes: 67108864
+        ACTIVATION
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.source_snapshot' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.cve' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.affected_product' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.affected_package' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.os_package' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.epss_score' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.known_exploited' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.reference' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.warning' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.go_module_evidence' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.go_call_reachability' --schema-version '1.0.0' --scope 'vulnerability_intelligence' --expires-in '8760h'
+        eshu component install "$${runtime}/manifest.yaml" --component-home "$${home}" --trust-mode allowlist --allow-id "$${ALLOW_IDS}" --allow-publisher "$${ALLOW_PUBLISHERS}"
+        raw="$$(eshu component list --component-home "$${home}" --json)"
+        listed="$$(printf '%s' "$${raw}" | tr -d ' \n')"
+        marker='{"id":"'
+        rest=$${listed}
+        found=""
+        while :; do
+          case "$${rest}" in
+            *"$${marker}"*) ;;
+            *) break ;;
+          esac
+          rest=$${rest#*"$${marker}"*}
+          entry=$${rest%%"$${marker}"*}
+          case "$${entry}" in
+            "$${COMPONENT_ID}\",\""*"\"version\":\"$${COMPONENT_VERSION}\""*) found=1 ;;
+          esac
+        done
+        if [ -z "$${found}" ]; then
+          echo "seeded manifest is not $${COMPONENT_ID}@$${COMPONENT_VERSION}; fix COMPONENT_ID/COMPONENT_VERSION or the seed image" >&2
+          exit 1
+        fi
+        status=0
+        out="$$(eshu component enable "$${COMPONENT_ID}" --component-home "$${home}" --instance "$${INSTANCE_ID}" --mode "$${MODE}" --claims --config "$${CONFIG_PATH}" 2>&1)" || status=$$?
+        printf '%s\n' "$${out}"
+        if [ "$${status}" -ne 0 ]; then
+          case "$${out}" in
+            *"activation \"$${INSTANCE_ID}\" is already enabled for component \"$${COMPONENT_ID}\""*)
+              echo "activation $${INSTANCE_ID} already enabled; continuing"
+              ;;
+            *) exit "$${status}" ;;
+          esac
+        fi
+        chown -R 10001:10001 "$${home}"
+    depends_on:
+      collector-vulnerability-intelligence-seed:
+        condition: service_completed_successfully
+
+volumes:
+  vulnerability_intelligence_component_home:

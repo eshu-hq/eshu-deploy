@@ -60,7 +60,7 @@ workloads stop rendering, or enabled Helm collector families lose
 | Loki | `collector-loki` observability profile | `loki-collector` | Observability overlay proof plus charted metrics coverage. |
 | Tempo | `collector-tempo` observability profile | `tempo-collector` | Observability overlay proof plus charted metrics coverage. |
 | Scanner worker | `scanner-worker` | `scanner-worker` | Isolated claim-driven worker; do not move scanner work into reducer lanes. |
-| Vulnerability intelligence | `collector-vulnerability-intelligence` | `vulnerability-intelligence-collector` | Claim-driven vulnerability source facts, queue state, and metrics coverage. |
+| Vulnerability intelligence | `collector-vulnerability-intelligence`, after its `-seed` and `-reconcile` one-shots | `vulnerability-intelligence-collector`, with seed and reconcile init containers | Host image runs the component-extension worker over the digest-pinned satellite. Claim-driven vulnerability source facts, queue state, and metrics coverage. |
 | Component extension | `component-extension-collector` profile | `component-extension-collector` | Trusted registry-backed extension host with health, readiness, metrics, NetworkPolicy, PDB, and `ServiceMonitor` template coverage when enabled. |
 
 ## Intentional Differences

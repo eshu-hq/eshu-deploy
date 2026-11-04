@@ -436,7 +436,14 @@ PagerDuty collectors. Add `docker-compose.remote-e2e.observability.yaml` for
 optional Grafana, Prometheus/Mimir, Loki, and Tempo workers. The stack is
 standalone and defaults the Compose project to `eshu-remote-e2e`.
 The root file is the stable operator entrypoint; it includes foundation,
-runtime/collector, and optional seed fragments that own the service groups.
+runtime/collector, and seed fragments that own the service groups.
+The `collector-vulnerability-intelligence` service runs the component-extension
+worker from the Eshu image. Before it starts,
+`collector-vulnerability-intelligence-seed` copies the digest-pinned satellite
+into the `vulnerability_intelligence_component_home` volume, and
+`collector-vulnerability-intelligence-reconcile` grants, installs, and enables
+it. Those two one-shots exit 0 and stay stopped. Pulling the seed image needs
+`linux/amd64` or emulation, because the release image is `linux/amd64` only.
 Run `scripts/verify-compose-helm-runtime-parity.sh` before treating Compose and
 Helm deployment evidence as aligned. The verifier checks this stack against the
 static service-contract shape in

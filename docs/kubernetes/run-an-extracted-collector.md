@@ -162,6 +162,15 @@ which still needs `instanceId` and hand-mounted `extraVolumes`.
 
 ## Derived OSV Scopes
 
+This section covers an entry in `componentExtensionCollector.activations`, where
+the coordinator plans from the component registry. The dedicated
+`vulnerabilityIntelligenceCollector` block runs the same satellite, but its
+coordinator plans from `workflowCoordinator.collectorInstances`. Set the derive
+sections there, and repeat them in that block's `config`. The chart refuses a
+render when `config` does not cover them, or when that instance plans a scope the
+satellite cannot resolve. See
+[Runtime Values](helm-runtime-values.md#vulnerability-intelligence-collector).
+
 A `vulnerability_intelligence` activation plans more than its host scope. The
 coordinator reads `derive_from_owned_packages` and
 `derive_from_installed_evidence` from the activation's `config` block and plans
