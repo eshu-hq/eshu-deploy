@@ -71,6 +71,24 @@ secret. Credentials belong only in an activation's extraEnv secretKeyRef.
 {{- end -}}
 {{- end -}}
 
+{{/* Refuses a credential in an activation's process block, env entries included. */}}
+{{- define "eshu.validate.componentActivationProcess" -}}
+{{- $at := .at -}}
+{{- $process := .process -}}
+{{- include "eshu.validate.componentActivationNoSecrets" (dict "path" (printf "%s.process" $at) "value" $process) -}}
+{{- range $entry := default (list) $process.env -}}
+{{- $parts := splitList "=" (toString $entry) -}}
+{{- $envName := first $parts -}}
+{{- $envValue := join "=" (rest $parts) -}}
+{{- if regexMatch "(?i)(password|passwd|secret|token|api[-_]?key|credential|private[-_]?key|authorization|bearer)" $envName -}}
+{{- fail (printf "%s.process.env entry %q looks like a credential; process.env is stored in a ConfigMap, so pass secrets through extraEnv secretKeyRef" $at $envName) -}}
+{{- end -}}
+{{- if regexMatch (include "eshu.validate.componentActivationTokenPattern" $) (trim $envValue) -}}
+{{- fail (printf "%s.process.env entry %q holds a credential-shaped value; process.env is stored in a ConfigMap, so pass secrets through extraEnv secretKeyRef" $at $envName) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "eshu.validate.componentActivation" -}}
 {{- $root := .root -}}
 {{- $activation := .activation -}}
@@ -149,18 +167,7 @@ secret. Credentials belong only in an activation's extraEnv secretKeyRef.
 {{- end -}}
 {{- $process := default (dict) $activation.process -}}
 {{- include "eshu.validate.componentActivationLease" (dict "root" $root "activation" $activation "at" $at) -}}
-{{- include "eshu.validate.componentActivationNoSecrets" (dict "path" (printf "%s.process" $at) "value" $process) -}}
-{{- range $entry := default (list) $process.env -}}
-{{- $parts := splitList "=" (toString $entry) -}}
-{{- $envName := first $parts -}}
-{{- $envValue := join "=" (rest $parts) -}}
-{{- if regexMatch "(?i)(password|passwd|secret|token|api[-_]?key|credential|private[-_]?key|authorization|bearer)" $envName -}}
-{{- fail (printf "%s.process.env entry %q looks like a credential; process.env is stored in a ConfigMap, so pass secrets through extraEnv secretKeyRef" $at $envName) -}}
-{{- end -}}
-{{- if regexMatch (include "eshu.validate.componentActivationTokenPattern" $) (trim $envValue) -}}
-{{- fail (printf "%s.process.env entry %q holds a credential-shaped value; process.env is stored in a ConfigMap, so pass secrets through extraEnv secretKeyRef" $at $envName) -}}
-{{- end -}}
-{{- end -}}
+{{- include "eshu.validate.componentActivationProcess" (dict "at" $at "process" $process) -}}
 {{- include "eshu.validate.componentActivationNoSecrets" (dict "path" (printf "%s.config" $at) "value" (default (dict) $activation.config)) -}}
 {{- $grants := default (list) $activation.grants -}}
 {{- range $gi, $grant := $grants -}}

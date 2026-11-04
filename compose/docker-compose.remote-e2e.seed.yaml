@@ -106,7 +106,7 @@ services:
   # and enable the component (host image, has sh). The worker starts only after
   # this exits 0. The coordinator plans from ESHU_COLLECTOR_INSTANCES_JSON in
   # the runtime fragment and the worker serves from the activation file below,
-  # so keep their targets equal; a go/internal/runtime test compares them.
+  # so keep the two configs equal; a go/internal/runtime test compares them.
   collector-vulnerability-intelligence-reconcile:
     build:
       context: .

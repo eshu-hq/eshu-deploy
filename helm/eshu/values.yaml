@@ -1185,10 +1185,10 @@ vulnerabilityIntelligenceCollector:
   # init container grants, installs, and enables the component in a pod-local
   # registry. Enabling this also needs componentExtensionCollector.trustMode:
   # allowlist, this componentId in allowIds, and eshu-hq in allowPublishers.
-  # The v0.1.3 manifest declares compatibleCore ">=0.0.5 <0.2.0", so an image
-  # outside that range (the default image.tag above is) fails the reconcile init
-  # container until componentExtensionCollector.coreVersion names a version in
-  # range or "dev".
+  # The v0.1.3 manifest declares compatibleCore ">=0.0.5 <0.2.0", and the default
+  # image.tag above is outside it, so the chart refuses a render with an empty
+  # componentExtensionCollector.coreVersion. Set a version in range when image.tag
+  # is a release in range, or "dev", which skips the range check and nothing else.
   componentId: dev.eshu.collector.vulnerability_intelligence
   componentVersion: "0.1.3"
   mode: scheduled
@@ -1210,8 +1210,10 @@ vulnerabilityIntelligenceCollector:
   # collector_instance_id from instanceId, because the satellite ends a claim
   # as terminal invalid_config without it. The coordinator plans from
   # workflowCoordinator.collectorInstances and this worker serves from here, so
-  # every target the coordinator plans must also be listed in config.targets
-  # (the chart refuses a render when one is missing). Name NVD credentials with
+  # every target the coordinator plans must also be listed in config.targets, and
+  # every derive section it enables must be covered here (the chart refuses a
+  # render that misses one, or a plan with slot_scopes, derive_from_findings or
+  # rolling NVD windows, which v0.1.3 cannot resolve). Name NVD credentials with
   # api_key_env and pass them through extraEnv.
   config:
     targets:
