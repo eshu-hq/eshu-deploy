@@ -193,6 +193,12 @@ func TestHelmComponentActivationsValidation(t *testing.T) {
 			wantOutput: "heartbeatInterval 90s must be less than claimLeaseTTL 60s",
 		},
 		{
+			name:       "heartbeat equal to the global lease",
+			old:        "  pollInterval: 13s\n",
+			new:        "  pollInterval: 13s\n  claimLeaseTTL: 30s\n  heartbeatInterval: 30s\n",
+			wantOutput: "heartbeatInterval 30s must be less than claimLeaseTTL 30s",
+		},
+		{
 			name:               "lease in milliseconds",
 			old:                "      replicas: 2\n",
 			new:                "      replicas: 2\n      claimLeaseTTL: 500ms\n",
