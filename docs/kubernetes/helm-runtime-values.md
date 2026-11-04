@@ -219,7 +219,9 @@ The chart rejects vulnerability-intelligence rendering unless:
 - `instanceId` is a lowercase DNS label of at most 53 characters, because it names
   the init containers.
 - `claimLeaseTTL` and `heartbeatInterval` are positive durations, and the
-  heartbeat is shorter than the lease.
+  heartbeat is shorter than the lease. The check reads this block's values and
+  the worker's defaults (60s and 20s), because this worker never reads
+  `componentExtensionCollector.claimLeaseTTL` or `.heartbeatInterval`.
 - `config` and `process` hold no key or value that looks like a credential. That
   covers each `process.env` entry, because the activation file is a ConfigMap.
 - `componentExtensionCollector.coreVersion` is set.
