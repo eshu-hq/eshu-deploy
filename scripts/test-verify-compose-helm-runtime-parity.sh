@@ -40,9 +40,23 @@ mkdir -p "${repo}/helm" "${repo}/compose"
 cp -R "${repo_root}/helm/eshu" "${repo}/helm/eshu"
 cp "${repo_root}/compose/docker-compose.yaml" "${repo}/compose/docker-compose.yaml"
 cp "${repo_root}/compose/docker-compose.remote-e2e.yaml" "${repo}/compose/docker-compose.remote-e2e.yaml"
+cp "${repo_root}/compose/docker-compose.remote-e2e.foundation.yaml" "${repo}/compose/docker-compose.remote-e2e.foundation.yaml"
+cp "${repo_root}/compose/docker-compose.remote-e2e.runtime.yaml" "${repo}/compose/docker-compose.remote-e2e.runtime.yaml"
+cp "${repo_root}/compose/docker-compose.remote-e2e.seed.yaml" "${repo}/compose/docker-compose.remote-e2e.seed.yaml"
 cp "${repo_root}/compose/docker-compose.remote-e2e.observability.yaml" "${repo}/compose/docker-compose.remote-e2e.observability.yaml"
 cp "${repo_root}/.env.remote-e2e.example" "${repo}/.env.remote-e2e.example"
 install_fake_tools "${repo}"
+
+# The fake docker returns canned --services/config output that never reads the
+# copied compose files, so assert the retargeted services exist in the real
+# files: deleting one must fail this test even when the fake reports pass.
+for compose_file in "${repo}/compose/docker-compose.yaml" \
+    "${repo}/compose/docker-compose.remote-e2e.foundation.yaml"; do
+    rg --quiet '^[[:space:]]*webhook-satellite:' "${compose_file}" \
+        || { printf 'expected webhook-satellite in %s\n' "${compose_file}" >&2; exit 1; }
+    rg --quiet '^[[:space:]]*webhook-intake:' "${compose_file}" \
+        || { printf 'expected webhook-intake in %s\n' "${compose_file}" >&2; exit 1; }
+done
 
 if ! PATH="${repo}/_bin:${PATH}" "${gate}" --repo-root "${repo}" >"${repo}/pass.out" 2>"${repo}/pass.err"; then
     sed -n '1,160p' "${repo}/pass.err" >&2

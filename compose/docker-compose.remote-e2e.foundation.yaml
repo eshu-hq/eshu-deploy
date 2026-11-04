@@ -118,18 +118,34 @@ services:
     environment:
       <<: *remote_e2e_runtime_env
 
-  webhook-listener:
+  # Provider edge (#9950): pinned satellite image; observed from outside via
+  # /readyz (distroless image has no shell for a healthcheck). Startup only
+  # orders after the intake host below.
+  webhook-satellite:
+    image: ${ESHU_WEBHOOK_IMAGE:-ghcr.io/eshu-hq/eshu-webhook:v0.1.0@sha256:7d03c22715183021cf0d0a4b50a1021f006f960d6860d8dcdf9b28c1b04d8786}
+    restart: on-failure
+    ports:
+      - "${ESHU_WEBHOOK_SATELLITE_HTTP_PORT:-18083}:8080"
+    environment:
+      <<: *remote_e2e_runtime_env
+      ESHU_AWS_FRESHNESS_TOKEN: ${ESHU_AWS_FRESHNESS_TOKEN:?set ESHU_AWS_FRESHNESS_TOKEN}
+      ESHU_WEBHOOK_INTAKE_URL: http://webhook-intake:8080
+      ESHU_WEBHOOK_INTAKE_TOKEN: ${ESHU_WEBHOOK_INTAKE_TOKEN:?set ESHU_WEBHOOK_INTAKE_TOKEN}
+      ESHU_WEBHOOK_MAX_BODY_BYTES: ${ESHU_WEBHOOK_MAX_BODY_BYTES:-1048576}
+    depends_on:
+      webhook-intake:
+        condition: service_started
+
+  # Core intake host (#9950): authenticates the satellite, persists triggers.
+  webhook-intake:
     build:
       context: .
       dockerfile: Dockerfile
     restart: on-failure
-    command: ["/usr/local/bin/eshu-webhook-listener"]
-    ports:
-      - "${ESHU_WEBHOOK_LISTENER_HTTP_PORT:-18083}:8080"
+    command: ["/usr/local/bin/eshu-webhook-intake"]
     environment:
       <<: *remote_e2e_runtime_env
-      ESHU_AWS_FRESHNESS_TOKEN: ${ESHU_AWS_FRESHNESS_TOKEN:?set ESHU_AWS_FRESHNESS_TOKEN}
-      ESHU_AWS_FRESHNESS_PATH: /webhooks/aws/eventbridge
+      ESHU_WEBHOOK_INTAKE_TOKEN: ${ESHU_WEBHOOK_INTAKE_TOKEN:?set ESHU_WEBHOOK_INTAKE_TOKEN}
       ESHU_WEBHOOK_MAX_BODY_BYTES: ${ESHU_WEBHOOK_MAX_BODY_BYTES:-1048576}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]

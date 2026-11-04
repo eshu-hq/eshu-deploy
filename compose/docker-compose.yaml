@@ -656,20 +656,50 @@ services:
       workspace-setup:
         condition: service_completed_successfully
 
-  webhook-listener:
+  # Provider edge (#9950): the extracted eshu-webhook satellite verifies
+  # provider signatures and submits normalized triggers to the intake host
+  # below. The satellite is a pinned image; only the intake host builds from
+  # the eshu checkout.
+  webhook-satellite:
     profiles:
-      - webhook-listener
+      - webhook
+    image: ${ESHU_WEBHOOK_IMAGE:-ghcr.io/eshu-hq/eshu-webhook:v0.1.0@sha256:7d03c22715183021cf0d0a4b50a1021f006f960d6860d8dcdf9b28c1b04d8786}
+    restart: on-failure
+    # No healthcheck: the image is distroless (no shell or curl). Readiness
+    # is observed from outside via /readyz, which additionally probes the
+    # intake uplink. Startup only orders after the intake host below.
+    ports:
+      - "${ESHU_WEBHOOK_SATELLITE_HTTP_PORT:-18083}:8080"
+    environment:
+      ESHU_DEPLOYMENT_ENVIRONMENT: local-compose
+      ESHU_WEBHOOK_GITHUB_SECRET: ${ESHU_WEBHOOK_GITHUB_SECRET:-}
+      ESHU_WEBHOOK_GITLAB_TOKEN: ${ESHU_WEBHOOK_GITLAB_TOKEN:-}
+      ESHU_WEBHOOK_BITBUCKET_SECRET: ${ESHU_WEBHOOK_BITBUCKET_SECRET:-}
+      ESHU_AWS_FRESHNESS_TOKEN: ${ESHU_AWS_FRESHNESS_TOKEN:-}
+      ESHU_WEBHOOK_PAGERDUTY_SECRET: ${ESHU_WEBHOOK_PAGERDUTY_SECRET:-}
+      ESHU_WEBHOOK_JIRA_SECRET: ${ESHU_WEBHOOK_JIRA_SECRET:-}
+      ESHU_WEBHOOK_INTAKE_URL: http://webhook-intake:8080
+      ESHU_WEBHOOK_INTAKE_TOKEN: ${ESHU_WEBHOOK_INTAKE_TOKEN:-}
+      ESHU_WEBHOOK_MAX_BODY_BYTES: ${ESHU_WEBHOOK_MAX_BODY_BYTES:-1048576}
+    depends_on:
+      webhook-intake:
+        condition: service_started
+
+  # Core intake host (#9950): authenticates the satellite and persists
+  # durable triggers in Postgres. Serves no provider-facing routes.
+  webhook-intake:
+    profiles:
+      - webhook
     build:
       context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
-    command: ["/usr/local/bin/eshu-webhook-listener"]
+    command: ["/usr/local/bin/eshu-webhook-intake"]
+    restart: on-failure
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
       interval: 15s
       timeout: 5s
       retries: 10
-    ports:
-      - "${ESHU_WEBHOOK_LISTENER_HTTP_PORT:-18083}:8080"
     environment:
       ESHU_CONTENT_STORE_DSN: postgresql://eshu:${ESHU_POSTGRES_PASSWORD:-change-me}@postgres:5432/eshu
       ESHU_POSTGRES_DSN: postgresql://eshu:${ESHU_POSTGRES_PASSWORD:-change-me}@postgres:5432/eshu
@@ -677,21 +707,7 @@ services:
       HOME: /tmp
       ESHU_DEPLOYMENT_ENVIRONMENT: local-compose
       ESHU_PROMETHEUS_METRICS_ENABLED: "true"
-      ESHU_WEBHOOK_GITHUB_SECRET: ${ESHU_WEBHOOK_GITHUB_SECRET:-}
-      ESHU_WEBHOOK_GITLAB_TOKEN: ${ESHU_WEBHOOK_GITLAB_TOKEN:-}
-      ESHU_WEBHOOK_BITBUCKET_SECRET: ${ESHU_WEBHOOK_BITBUCKET_SECRET:-}
-      ESHU_AWS_FRESHNESS_TOKEN: ${ESHU_AWS_FRESHNESS_TOKEN:-}
-      ESHU_WEBHOOK_PAGERDUTY_SECRET: ${ESHU_WEBHOOK_PAGERDUTY_SECRET:-}
-      ESHU_WEBHOOK_JIRA_SECRET: ${ESHU_WEBHOOK_JIRA_SECRET:-}
-      ESHU_WEBHOOK_GITHUB_PATH: ${ESHU_WEBHOOK_GITHUB_PATH:-/webhooks/github}
-      ESHU_WEBHOOK_GITLAB_PATH: ${ESHU_WEBHOOK_GITLAB_PATH:-/webhooks/gitlab}
-      ESHU_WEBHOOK_BITBUCKET_PATH: ${ESHU_WEBHOOK_BITBUCKET_PATH:-/webhooks/bitbucket}
-      ESHU_AWS_FRESHNESS_PATH: ${ESHU_AWS_FRESHNESS_PATH:-/webhooks/aws/eventbridge}
-      ESHU_WEBHOOK_PAGERDUTY_PATH: ${ESHU_WEBHOOK_PAGERDUTY_PATH:-/webhooks/pagerduty}
-      ESHU_WEBHOOK_JIRA_PATH: ${ESHU_WEBHOOK_JIRA_PATH:-/webhooks/jira}
-      ESHU_WEBHOOK_PAGERDUTY_SCOPE_ID: ${ESHU_WEBHOOK_PAGERDUTY_SCOPE_ID:-}
-      ESHU_WEBHOOK_JIRA_SCOPE_ID: ${ESHU_WEBHOOK_JIRA_SCOPE_ID:-}
-      ESHU_WEBHOOK_DEFAULT_BRANCH: ${ESHU_WEBHOOK_DEFAULT_BRANCH:-main}
+      ESHU_WEBHOOK_INTAKE_TOKEN: ${ESHU_WEBHOOK_INTAKE_TOKEN:-}
       ESHU_WEBHOOK_MAX_BODY_BYTES: ${ESHU_WEBHOOK_MAX_BODY_BYTES:-1048576}
     depends_on:
       db-migrate:
