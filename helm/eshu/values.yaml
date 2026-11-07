@@ -1185,16 +1185,16 @@ vulnerabilityIntelligenceCollector:
   # init container grants, installs, and enables the component in a pod-local
   # registry. Enabling this also needs componentExtensionCollector.trustMode:
   # allowlist, this componentId in allowIds, and eshu-hq in allowPublishers.
-  # The v0.1.3 manifest declares compatibleCore ">=0.0.5 <0.2.0", and the default
+  # The v0.1.4 manifest declares compatibleCore ">=0.0.5 <0.2.0", and the default
   # image.tag above is outside it, so the chart refuses a render with an empty
   # componentExtensionCollector.coreVersion. Set a version in range when image.tag
   # is a release in range, or "dev", which skips the range check and nothing else.
   componentId: dev.eshu.collector.vulnerability_intelligence
-  componentVersion: "0.1.3"
+  componentVersion: "0.1.4"
   mode: scheduled
   seed:
-    # eshu-collector-vulnerability-intelligence v0.1.3 (linux/amd64).
-    image: ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:d0d0f289721e87e941e0fcb6cf4091c96a62b571ce533d956a5ef982490bce5d
+    # eshu-collector-vulnerability-intelligence v0.1.4 (linux/amd64).
+    image: ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7
     pullPolicy: IfNotPresent
     # Satellite entrypoint: the image ships only /usr/local/bin/collector.
     command: ["/usr/local/bin/collector", "seed"]

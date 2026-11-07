@@ -183,7 +183,7 @@ OSV snapshots, or OSV targets derived from owned packages and installed evidence
 
 Defaults: disabled, one replica, `instanceId=vulnerability-intelligence-primary`,
 `pollInterval=2s`, empty `claimLeaseTTL`/`heartbeatInterval` (worker defaults
-apply), the v0.1.3 `seed.image`, grants for the eleven `vulnerability.*` kinds the
+apply), the v0.1.4 `seed.image`, grants for the eleven `vulnerability.*` kinds the
 manifest declares, one CISA KEV target in `config.targets`, and Kubernetes
 defaults requesting `cpu=250m`, `memory=512Mi` and limiting the pod at
 `cpu=1000m`, `memory=2Gi`. The extension host stops the collector when the
@@ -231,7 +231,7 @@ The chart rejects vulnerability-intelligence rendering unless:
 The chart writes `collector_instance_id` into the activation from `instanceId`,
 because the collector ends a claim as terminal `invalid_config` without it.
 
-`coreVersion` is required because the v0.1.3 manifest declares
+`coreVersion` is required because the v0.1.4 manifest declares
 `compatibleCore: ">=0.0.5 <0.2.0"`, and with no value the reconcile init container
 checks the version built into the image. The default `image.tag`,
 `v0.0.3-pre-release-18`, sorts below that range, and a commit-SHA tag is not a
