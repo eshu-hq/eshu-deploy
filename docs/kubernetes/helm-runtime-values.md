@@ -213,9 +213,11 @@ The chart rejects vulnerability-intelligence rendering unless:
   sections must list every ecosystem the coordinator's section plans. A blank
   list on the coordinator means `npm` for that section. The satellite defaults
   only an empty union to `npm`, so list ecosystems explicitly.
-- The coordinator's matching instance plans no scope satellite v0.1.3 cannot
-  resolve: `derive_from_owned_packages.slot_scopes`, `derive_from_findings`, and
-  `derive_nvd_rolling_windows` with an NVD modified-window target.
+- The coordinator's matching instance plans no scope the satellite release
+  cannot resolve: `derive_from_owned_packages.slot_scopes`,
+  `derive_from_findings`, and `derive_nvd_rolling_windows` with two NVD
+  modified-window targets. A single-anchor rolling-window plan renders: the
+  window release resolves `_window` scopes from the anchor.
 - `instanceId` is a lowercase DNS label of at most 53 characters, because it names
   the init containers.
 - `claimLeaseTTL` and `heartbeatInterval` are positive durations, and the

@@ -1212,8 +1212,9 @@ vulnerabilityIntelligenceCollector:
   # workflowCoordinator.collectorInstances and this worker serves from here, so
   # every target the coordinator plans must also be listed in config.targets, and
   # every derive section it enables must be covered here (the chart refuses a
-  # render that misses one, or a plan with slot_scopes, derive_from_findings or
-  # rolling NVD windows, which v0.1.3 cannot resolve). Name NVD credentials with
+  # render that misses one, a plan with slot_scopes or derive_from_findings,
+  # which the window release still cannot resolve, or a rolling-window plan
+  # with two window-mode NVD anchors). Name NVD credentials with
   # api_key_env and pass them through extraEnv.
   config:
     targets:
