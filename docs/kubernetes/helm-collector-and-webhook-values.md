@@ -161,8 +161,8 @@ additionally fails on those same seed, allowlist, and host-scope conditions, whe
 `allowPublishers` omits `eshu-hq`, when `componentExtensionCollector.coreVersion`
 is empty, when `config.targets` or the derive sections in `config` do not cover
 what the coordinator plans, when the coordinator's instance plans a scope the
-satellite cannot resolve (`slot_scopes`, `derive_from_findings` below a
-post-v0.1.3 worker pin with the worker findings section enabled, or rolling
+satellite cannot resolve (`slot_scopes`, `derive_from_findings` against a
+pre-v0.1.5 worker pin or without the worker findings section, or rolling
 NVD windows), when `instanceId` is not a DNS label, when the heartbeat is not shorter
 than the lease, or when `config` or `process` holds a credential-shaped key or
 value.
