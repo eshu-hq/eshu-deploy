@@ -93,9 +93,18 @@ resolutionEngine:
 Enable `ESHU_PPROF_ADDR` only on the workload that owns the slow stage and keep
 the port private.
 
+## Which image runs what
+
+Most workloads run the shared core image by default. A few satellite images
+also exist: the extracted API image in `values.yaml`, and digest-pinned
+collector seed images for Loki, Tempo, and vulnerability intelligence. For
+example, `mcpServer.image` is empty by default, so the MCP server runs the
+core image unless you set it. Don't guess. Render the chart and check before
+you assume a workload runs a satellite image.
+
 ## Related References
 
-- [Service Runtimes](../../deployment/service-runtimes.md)
-- [Core Runtime Services](../../deployment/service-runtimes-core.md)
-- [Collector Runtime Services](../../deployment/service-runtimes-collectors.md)
-- [Bootstrap Runtime Services](../../deployment/service-runtimes-bootstrap.md)
+- [Service Runtimes](https://github.com/eshu-hq/eshu/blob/main/docs/public/deployment/service-runtimes.md)
+- [Core Runtime Services](https://github.com/eshu-hq/eshu/blob/main/docs/public/deployment/service-runtimes-core.md)
+- [Collector Runtime Services](https://github.com/eshu-hq/eshu/blob/main/docs/public/deployment/service-runtimes-collectors.md)
+- [Bootstrap Runtime Services](https://github.com/eshu-hq/eshu/blob/main/docs/public/deployment/service-runtimes-bootstrap.md)
