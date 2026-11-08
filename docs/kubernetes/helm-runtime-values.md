@@ -215,7 +215,9 @@ The chart rejects vulnerability-intelligence rendering unless:
   only an empty union to `npm`, so list ecosystems explicitly.
 - The coordinator's matching instance plans no scope the satellite release
   cannot resolve: `derive_from_owned_packages.slot_scopes`,
-  `derive_from_findings`, and `derive_nvd_rolling_windows` with two NVD
+  `derive_from_findings` (served only by satellite v0.1.5 or later when the
+  worker config enables the findings section; the gate still refuses it
+  against a pre-v0.1.5 pin), and `derive_nvd_rolling_windows` with two NVD
   modified-window targets. A single-anchor rolling-window plan renders: the
   window release resolves `_window` scopes from the anchor.
 - `instanceId` is a lowercase DNS label of at most 53 characters, because it names
