@@ -183,7 +183,7 @@ OSV snapshots, or OSV targets derived from owned packages and installed evidence
 
 Defaults: disabled, one replica, `instanceId=vulnerability-intelligence-primary`,
 `pollInterval=2s`, empty `claimLeaseTTL`/`heartbeatInterval` (worker defaults
-apply), the v0.1.3 `seed.image`, grants for the eleven `vulnerability.*` kinds the
+apply), the v0.1.4 `seed.image`, grants for the eleven `vulnerability.*` kinds the
 manifest declares, one CISA KEV target in `config.targets`, and Kubernetes
 defaults requesting `cpu=250m`, `memory=512Mi` and limiting the pod at
 `cpu=1000m`, `memory=2Gi`. The extension host stops the collector when the
@@ -213,9 +213,11 @@ The chart rejects vulnerability-intelligence rendering unless:
   sections must list every ecosystem the coordinator's section plans. A blank
   list on the coordinator means `npm` for that section. The satellite defaults
   only an empty union to `npm`, so list ecosystems explicitly.
-- The coordinator's matching instance plans no scope satellite v0.1.3 cannot
-  resolve: `derive_from_owned_packages.slot_scopes`, `derive_from_findings`, and
-  `derive_nvd_rolling_windows` with an NVD modified-window target.
+- The coordinator's matching instance plans no scope the satellite release
+  cannot resolve: `derive_from_owned_packages.slot_scopes`,
+  `derive_from_findings`, and `derive_nvd_rolling_windows` with two NVD
+  modified-window targets. A single-anchor rolling-window plan renders: the
+  window release resolves `_window` scopes from the anchor.
 - `instanceId` is a lowercase DNS label of at most 53 characters, because it names
   the init containers.
 - `claimLeaseTTL` and `heartbeatInterval` are positive durations, and the
@@ -229,7 +231,7 @@ The chart rejects vulnerability-intelligence rendering unless:
 The chart writes `collector_instance_id` into the activation from `instanceId`,
 because the collector ends a claim as terminal `invalid_config` without it.
 
-`coreVersion` is required because the v0.1.3 manifest declares
+`coreVersion` is required because the v0.1.4 manifest declares
 `compatibleCore: ">=0.0.5 <0.2.0"`, and with no value the reconcile init container
 checks the version built into the image. The default `image.tag`,
 `v0.0.3-pre-release-18`, sorts below that range, and a commit-SHA tag is not a

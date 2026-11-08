@@ -91,14 +91,14 @@ services:
         condition: service_started
 
   # One-shot: copy the collector binary and manifest out of the digest-pinned
-  # satellite image (v0.1.3) into the shared component home. Runs as root so the
+  # satellite image (v0.1.4) into the shared component home. Runs as root so the
   # seeded files land in the fresh root-owned named volume; the reconcile step
   # hands ownership to the runtime uid when the registry is ready.
   collector-vulnerability-intelligence-seed:
-    image: ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:d0d0f289721e87e941e0fcb6cf4091c96a62b571ce533d956a5ef982490bce5d
+    image: ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7
     restart: "no"
     user: "0:0"
-    command: ["/usr/local/bin/collector", "seed", "--dest", "/components/runtime/remote-e2e-vulnerability-intelligence", "--image-ref", "ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:d0d0f289721e87e941e0fcb6cf4091c96a62b571ce533d956a5ef982490bce5d"]
+    command: ["/usr/local/bin/collector", "seed", "--dest", "/components/runtime/remote-e2e-vulnerability-intelligence", "--image-ref", "ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7"]
     volumes:
       - vulnerability_intelligence_component_home:/components
 
@@ -116,7 +116,7 @@ services:
     environment:
       ESHU_COMPONENT_HOME: /components
       COMPONENT_ID: dev.eshu.collector.vulnerability_intelligence
-      COMPONENT_VERSION: 0.1.3
+      COMPONENT_VERSION: 0.1.4
       INSTANCE_ID: remote-e2e-vulnerability-intelligence
       MODE: scheduled
       CONFIG_PATH: /components/activations/remote-e2e-vulnerability-intelligence.yaml
