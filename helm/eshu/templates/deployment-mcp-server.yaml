@@ -42,16 +42,30 @@ spec:
       containers:
         - name: mcp-server
           {{- /* Staged extracted-image pin (Refs eshu-hq/eshu#9633): when
-          .Values.mcpServer.image carries the pin it renders; empty or
-          unset falls back to the shared monolith image. A template
-          comment keeps default renders byte-identical. */}}
+          .Values.mcpServer.image carries the pin it renders with the
+          extracted entrypoint below; empty or unset falls back to the
+          shared monolith image and its `eshu mcp start` command. A
+          template comment keeps default renders byte-identical. */}}
           {{- if .Values.mcpServer.image }}
           image: "{{ .Values.mcpServer.image }}"
           {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.mcpServer.image }}
+          # The extracted binary is /eshu-mcp, not the monolith CLI: it
+          # takes --core-base-url. An empty coreBaseURL omits the flag
+          # and the binary fails closed at startup, mirroring the
+          # extracted-api edge (eshu-hq/eshu#9521).
+          command: ["/eshu-mcp"]
+          {{- if .Values.mcpServer.coreBaseURL }}
+          args:
+            - --core-base-url
+            - {{ .Values.mcpServer.coreBaseURL | quote }}
+          {{- end }}
+          {{- else }}
           command: ["eshu", "mcp", "start", "--transport", "http"]
+          {{- end }}
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           env:

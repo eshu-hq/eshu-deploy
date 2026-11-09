@@ -1473,7 +1473,11 @@
         "revisionHistoryLimit": { "type": "integer", "minimum": 0 },
         "image": {
           "type": "string",
-          "description": "Full image reference override for the extracted eshu-mcp binary (Refs eshu-hq/eshu#9633). Staged-only: do not set until eshu-hq/eshu#9521 lands the mcp-server command switch; the template still renders the monolith command, so a set pin yields a command-mismatched pod. Empty (the default) keeps the shared monolith image."
+          "description": "Full image reference override for the extracted eshu-mcp binary (Refs eshu-hq/eshu#9633). Staged-only: do not set until eshu-hq/eshu#9521 lands the mcp-server command switch. A set pin renders the extracted /eshu-mcp entrypoint with --core-base-url args. Empty (the default) keeps the shared monolith image."
+        },
+        "coreBaseURL": {
+          "type": "string",
+          "description": "Core read-API origin for /eshu-mcp --core-base-url. Empty omits the flag and the binary fails closed at startup; ignored on the monolith path."
         },
         "env": {
           "type": "object",
