@@ -223,11 +223,14 @@ mcpServer:
   revisionHistoryLimit: 3
   # Full image reference override for the extracted eshu-mcp binary
   # (Refs eshu-hq/eshu#9633, part of #6707). Staged-only: do NOT set this
-  # until eshu-hq/eshu#9521 lands the mcp-server command switch. The
-  # template still renders the monolith `eshu mcp start --transport http`
-  # command, so a set pin yields a command-mismatched pod. Empty (the
-  # default) keeps the shared monolith image below.
+  # until eshu-hq/eshu#9521 lands the mcp-server command switch. A set pin
+  # renders the extracted /eshu-mcp entrypoint with --core-base-url args
+  # below. Empty (the default) keeps the shared monolith image below.
   image: ""
+  # Core read-API origin the extracted binary dispatches to (/eshu-mcp
+  # --core-base-url). Empty omits the flag and the binary fails closed at
+  # startup, mirroring the extractedApi edge; ignored on the monolith path.
+  coreBaseURL: ""
   # MCP-only environment variables. To choose what tools/list advertises, set
   # ESHU_MCP_TOOL_SURFACE here (issue #8758). Unset means full. A direct
   # tools/call to a tool the surface hides still dispatches (the query profile's

@@ -67,10 +67,12 @@ guidance belong in the public Kubernetes docs.
   fail closed at startup.
 - Staged extracted-image pins (Refs eshu-hq/eshu#9633, part of #6707):
   `mcpServer.image` is staged-only: do not set it until eshu-hq/eshu#9521
-  lands the mcp-server command switch, because the template still renders
-  the monolith `eshu mcp start --transport http` command and a set pin
-  would yield a command-mismatched pod. Empty (the default) falls back to
-  the shared monolith image. `extractedApi`
+  lands the mcp-server command switch. A set pin renders the extracted
+  `/eshu-mcp` entrypoint with `--core-base-url` args from
+  `mcpServer.coreBaseURL` (empty omits the flag and the binary fails
+  closed at startup). Empty (the default) falls back to
+  the shared monolith image and its `eshu mcp start --transport http`
+  command. `extractedApi`
   (default `enabled: false`) renders the extracted-api Deployment and Service
   only when enabled; its `image.repository`/`tag`/`digest` render
   `repository:tag[@digest]`, and `coreBaseURL` feeds `eshu-api
