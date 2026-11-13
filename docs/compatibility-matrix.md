@@ -28,7 +28,7 @@ per `eshu-hq/eshu#8871`) is superseded.
 | eshu chart (`eshu`) | `0.0.3-pre-release-33` | `0.0.3-pre-release-34` |
 | Loki collector (digest-pinned) | `sha256:12eac89e7abd2988529c6f2854ba63293b5507502630764c3f6b8ffc7e3bf84d` | `sha256:12eac89e7abd2988529c6f2854ba63293b5507502630764c3f6b8ffc7e3bf84d` |
 | Tempo collector (digest-pinned) | `sha256:0230e174284bb7a9831babac9b9927be05df02e8620c20e448e91dbb1ac2ecac` | `sha256:0230e174284bb7a9831babac9b9927be05df02e8620c20e448e91dbb1ac2ecac` |
-| Vulnerability-intelligence collector (digest-pinned) | `sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fd12d0b7` | `sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fd12d0b7` |
+| Vulnerability-intelligence collector (digest-pinned) | `sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7` | `sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7` |
 | Postgres | `postgres:18-alpine` | `postgres:18-alpine` |
 | Neo4j (compose default) | `neo4j:2026-community@sha256:eabfbb042bdaca2fd5e1950db1329b22c794eee80f0eacc4e7a729d44b2e863f` | `neo4j:2026-community@sha256:eabfbb042bdaca2fd5e1950db1329b22c794eee80f0eacc4e7a729d44b2e863f` |
 | NornicDB (`nornicdb-amd64-cpu`) | `fix-500-e022384c@sha256:74a8ed7b36f37bdd1a7e32d8bc6aa3fa88908b7207bfa6568567ab94e4a4b3b1` | `fix-500-e022384c@sha256:74a8ed7b36f37bdd1a7e32d8bc6aa3fa88908b7207bfa6568567ab94e4a4b3b1` |
