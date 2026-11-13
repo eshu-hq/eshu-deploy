@@ -16,8 +16,9 @@ scripts/verify-compose-helm-runtime-parity.sh
 Tested pair refreshed for chart `0.0.3-pre-release-34` (checked against
 `origin/main` at `0.0.3-pre-release-33` on 2026-11-13 for eshu-hq/eshu#10621;
 appVersion still `v0.0.3-pre-release-18`). The `-33` to `-34` delta is a
-comment-only `values.yaml` change: `helm template` renders byte-identical
-manifests from both files, so the `-33` tested pair covers `-34` exactly.
+comment-only `values.yaml` change: `helm template` renders identical
+manifests from both files except the `helm.sh/chart` version labels, so the
+`-33` tested pair covers `-34` exactly.
 Oldest and newest converge on that range until a later release records a
 wider tested range. The extraction-time pair (chart `0.0.3-pre-release-26`
 per `eshu-hq/eshu#8871`) is superseded.
