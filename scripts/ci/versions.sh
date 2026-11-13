@@ -44,5 +44,5 @@ GOVULNCHECK_VERSION=v1.9.0
 GOLANGCI_LINT_VERSION=v2.12.2
 # Go toolchain tarball, sha256-checked on download (go.dev/dl publishes the
 # checksum in its release JSON; re-verify there when auditing).
-GO_VERSION=1.26.10
-GO_SHA256=ccfe7ae822d2c2f41f4fe7c956199967a4dac22d0ee0d2b2bfdb440aab3b20c5
+GO_VERSION=1.26.11
+GO_SHA256=9849f4e04ee35303714e34fbc3ac8ab44ea3e448a95aa182f91e3b9b79c710ec
