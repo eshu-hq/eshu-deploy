@@ -1473,7 +1473,7 @@
         "revisionHistoryLimit": { "type": "integer", "minimum": 0 },
         "image": {
           "type": "string",
-          "description": "Full image reference override for the extracted eshu-mcp binary (Refs eshu-hq/eshu#9633). Staged-only: do not set until eshu-hq/eshu#9521 lands the mcp-server command switch. A set pin renders the extracted /eshu-mcp entrypoint with --core-base-url args. Empty (the default) keeps the shared monolith image."
+          "description": "Full image reference override for the extracted eshu-mcp binary (Refs eshu-hq/eshu#9633, part of #6707; MCP cutover eshu-hq/eshu#8873 is closed and eshu-hq/eshu#9521 is closed, so the staging gate is gone). A set pin renders the extracted /eshu-mcp entrypoint with --core-base-url args. Empty (the default) keeps the shared monolith image."
         },
         "coreBaseURL": {
           "type": "string",

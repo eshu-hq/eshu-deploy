@@ -147,9 +147,9 @@ func TestHelmExtractedApiSchemaRejects(t *testing.T) {
 	}
 }
 
-// TestHelmMCPServerImageFallbackAndPin guards the staged mcpServer.image
-// knob: empty renders the shared monolith image, a set pin renders verbatim.
-// The pin stays staged-only until eshu-hq/eshu#9521 (see values.yaml).
+// TestHelmMCPServerImageFallbackAndPin guards the mcpServer.image knob:
+// empty renders the shared monolith image, a set pin renders verbatim.
+// The #9521 staging gate is gone (see values.yaml); the pin is live.
 func TestHelmMCPServerImageFallbackAndPin(t *testing.T) {
 	t.Parallel()
 

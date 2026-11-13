@@ -65,9 +65,10 @@ guidance belong in the public Kubernetes docs.
   `ESHU_SCOPED_TOKENS_FILE` at the mounted path. Only set
   `ESHU_SCOPED_TOKENS_FILE` once the Secret exists: a missing file makes the API
   fail closed at startup.
-- Staged extracted-image pins (Refs eshu-hq/eshu#9633, part of #6707):
-  `mcpServer.image` is staged-only: do not set it until eshu-hq/eshu#9521
-  lands the mcp-server command switch. A set pin renders the extracted
+- Extracted-image pins (Refs eshu-hq/eshu#9633, part of #6707; MCP cutover
+  eshu-hq/eshu#8873 and eshu-hq/eshu#9521 are both closed, so the staging
+  gate is gone):
+  A set `mcpServer.image` pin renders the extracted
   `/eshu-mcp` entrypoint with `--core-base-url` args from
   `mcpServer.coreBaseURL` (empty omits the flag and the binary fails
   closed at startup). Empty (the default) falls back to
