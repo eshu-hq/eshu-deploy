@@ -46,7 +46,11 @@ services:
     image: ${ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE:?set ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE after the scanner-worker go-reachability release}
     restart: "no"
     user: "0:0"
-    command: ["/usr/local/bin/eshu-scanner-component-go-reachability", "seed", "--dest", "/components/runtime/remote-e2e-go-reachability", "--image-ref", "${ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE:?set ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE after the scanner-worker go-reachability release}"]
+    # NOTE: no binary path here — the image ENTRYPOINT already is the
+    # component binary, so command argv starts at the `seed` subcommand.
+    # Repeating the binary path makes it argv[1] and the binary falls
+    # through to Runner mode, failing on empty stdin.
+    command: ["seed", "--dest", "/components/runtime/remote-e2e-go-reachability", "--image-ref", "${ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE:?set ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE after the scanner-worker go-reachability release}"]
     volumes:
       - go_reachability_component_home:/components
 
