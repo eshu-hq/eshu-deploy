@@ -13,12 +13,14 @@ scripts/verify-compose-helm-runtime-parity.sh
 
 ## Tested pairs (v0)
 
-Tested pair refreshed for chart `0.0.3-pre-release-34` (checked against
-`origin/main` at `0.0.3-pre-release-33` on 2026-11-13 for eshu-hq/eshu#10621;
-appVersion still `v0.0.3-pre-release-18`). The `-33` to `-34` delta is a
-comment-only `values.yaml` change: `helm template` renders identical
-manifests from both files except the `helm.sh/chart` version labels, so the
-`-33` tested pair covers `-34` exactly.
+Tested pair refreshed for chart `0.0.3-pre-release-35` (checked against
+`origin/main` at `0.0.3-pre-release-34` on 2026-11-20 for
+eshu-hq/eshu-deploy#40; appVersion still `v0.0.3-pre-release-18`). The `-34`
+to `-35` delta adds the disabled `scannerGoReachability` values block, its
+schema, and a NetworkPolicy template that renders nothing while disabled:
+`helm template` renders identical manifests from both files except the
+`helm.sh/chart` version labels (verified by local default-render diff), so
+the `-34` tested pair covers `-35` exactly.
 Oldest and newest converge on that range until a later release records a
 wider tested range. The extraction-time pair (chart `0.0.3-pre-release-26`
 per `eshu-hq/eshu#8871`) is superseded.
@@ -26,7 +28,7 @@ per `eshu-hq/eshu#8871`) is superseded.
 | Component | Oldest supported | Newest tested |
 | --- | --- | --- |
 | eshu core (`ghcr.io/eshu-hq/eshu`) | `v0.0.3-pre-release-18` | `v0.0.3-pre-release-18` |
-| eshu chart (`eshu`) | `0.0.3-pre-release-33` | `0.0.3-pre-release-34` |
+| eshu chart (`eshu`) | `0.0.3-pre-release-34` | `0.0.3-pre-release-35` |
 | Loki collector (digest-pinned) | `sha256:12eac89e7abd2988529c6f2854ba63293b5507502630764c3f6b8ffc7e3bf84d` | `sha256:12eac89e7abd2988529c6f2854ba63293b5507502630764c3f6b8ffc7e3bf84d` |
 | Tempo collector (digest-pinned) | `sha256:0230e174284bb7a9831babac9b9927be05df02e8620c20e448e91dbb1ac2ecac` | `sha256:0230e174284bb7a9831babac9b9927be05df02e8620c20e448e91dbb1ac2ecac` |
 | Vulnerability-intelligence collector (digest-pinned) | `sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7` | `sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7` |

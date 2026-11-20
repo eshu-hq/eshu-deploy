@@ -939,6 +939,56 @@ componentExtensionCollector:
       cpu: 1000m
       memory: 2Gi
 
+scannerGoReachability:
+  # Dedicated least-privilege egress for the go-reachability scanner
+  # activation (eshu-hq/eshu-deploy#40). Disabled until eshu-scanner-worker
+  # publishes its first scanner-go-reachability release: enabling renders
+  # the NetworkPolicy below, while the activation itself stays a commented
+  # skeleton in helm/eshu/ci/scanner-activations.values.yaml until the seed
+  # image digest exists to pin. Never ship allow-all egress as done.
+  enabled: false
+  # Must match the activation instanceId in the scanner example values; the
+  # policy selects the activation pods by this label.
+  instanceId: scanner-go-reachability
+  egress:
+    # Destination lists are operator CIDRs covering each endpoint the
+    # scanner reaches. Vanilla Kubernetes NetworkPolicy is IP-only: it
+    # cannot express endpoint hostnames, so populate these lists (an empty
+    # list fails closed to deny, as long as co-selecting policies are also
+    # restricted — Kubernetes unions policies, so the generic collector
+    # policy in broad mode would still allow all) or enforce the names on
+    # a CNI with FQDN
+    # policy, or mirror the endpoints in-cluster — see
+    # docs/kubernetes/helm-routing-and-storage-values.md.
+    # Default endpoints: gitClone github.com (the default
+    # allowed_clone_hosts), moduleProxy proxy.golang.org (the default
+    # GOPROXY), checksumDB sum.golang.org (the default GOSUMDB), vulnDB
+    # vuln.go.dev (the govulncheck default; GOVULNDB overrides it).
+    gitClone:
+      enabled: true
+      to: []
+      ports:
+        - protocol: TCP
+          port: 443
+    moduleProxy:
+      enabled: true
+      to: []
+      ports:
+        - protocol: TCP
+          port: 443
+    checksumDB:
+      enabled: true
+      to: []
+      ports:
+        - protocol: TCP
+          port: 443
+    vulnDB:
+      enabled: true
+      to: []
+      ports:
+        - protocol: TCP
+          port: 443
+
 grafanaCollector:
   enabled: false
   replicas: 1
