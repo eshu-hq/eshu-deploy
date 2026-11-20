@@ -156,3 +156,16 @@ spec:
             summary: "Hosted Eshu runtime status snapshot is failing on scrape"
             description: "The runtime /metrics scrape could not read its status snapshot, so queue, generation, health, and status summary gauges are omitted from that runtime. Queue and completeness alerts cannot fire while this persists."
             runbook: "Check the scraped runtime logs for the status snapshot error, eshu_dp_status_snapshot_read_duration_seconds by outcome, and Postgres reachability from that pod. A database error reading the stored summary row fails the scrape by design, so verify Postgres before touching ESHU_STATUS_SUMMARY_READ_ENABLED."
+
+        - alert: EshuAWSDriftConsecutiveCorrectingAudits
+          expr: |
+            (sum(increase(eshu_dp_aws_drift_incremental_audits_total{outcome="correcting"}[25h])) > 0) and on() (sum(increase(eshu_dp_aws_drift_incremental_audits_total{outcome="correcting"}[25h] offset 25h)) > 0)
+          for: 15m
+          labels:
+            severity: critical
+            component: pipeline
+            runbook_section: drift-audit
+          annotations:
+            summary: "Two consecutive drift audits corrected delta misses"
+            description: "Two consecutive daily aws_cloud_runtime_drift audits each found keys the delta run would have missed: the skip path is systematically blind."
+            runbook: "Inspect the delta filter/diff path the audit replays and the magnitude on eshu_dp_aws_drift_incremental_audit_corrections_total; never restart broadly to clear it."
