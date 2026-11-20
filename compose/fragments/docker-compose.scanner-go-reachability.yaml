@@ -55,7 +55,7 @@ services:
   # starts only after this exits 0.
   collector-go-reachability-reconcile:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: "no"
     user: "0:0"
@@ -118,7 +118,7 @@ services:
   # remote-e2e stack.
   collector-go-reachability:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-collector-component-extension"]
