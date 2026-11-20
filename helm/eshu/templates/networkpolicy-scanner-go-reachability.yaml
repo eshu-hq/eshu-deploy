@@ -7,7 +7,10 @@ no NetworkPolicy from networkpolicy.yaml (that file covers the single
 legacy worker only), so this policy selects the go-reachability activation
 pods directly. Egress is DNS plus the four scanner destinations the operator
 populates under scannerGoReachability.egress; an empty destination list
-renders no rule and stays denied. There is deliberately no allow-all rule:
+renders no rule and stays denied, provided co-selecting policies (notably
+the generic component-extension-collector policy) also run restricted —
+Kubernetes unions policies, so a broad allow-all elsewhere still applies.
+There is deliberately no allow-all rule here:
 vanilla Kubernetes NetworkPolicy cannot express the endpoint hostnames, so
 name enforcement needs a CNI with FQDN policy, or in-cluster mirrors behind
 the CIDR lists — see docs/kubernetes/helm-routing-and-storage-values.md.

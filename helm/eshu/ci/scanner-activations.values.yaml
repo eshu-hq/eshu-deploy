@@ -46,7 +46,9 @@ componentExtensionCollector:
     # digest-pinned, and core admission refuses an unpinned component. The
     # entry inherits the sandbox the existing scanners use: allowlist trust
     # with the extension egress policy in restricted mode above, plus the
-    # chart-global non-root read-only container sandbox.
+    # chart-global non-root read-only container sandbox. Keep the generic
+    # collector policy restricted too: Kubernetes unions co-selecting
+    # policies, so a broad allow-all there would cover these pods as well.
     # - instanceId: scanner-go-reachability
     #   componentId: eshu.scanner.go-reachability
     #   componentVersion: 0.1.0

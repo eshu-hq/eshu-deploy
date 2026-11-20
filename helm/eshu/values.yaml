@@ -954,7 +954,10 @@ scannerGoReachability:
     # Destination lists are operator CIDRs covering each endpoint the
     # scanner reaches. Vanilla Kubernetes NetworkPolicy is IP-only: it
     # cannot express endpoint hostnames, so populate these lists (an empty
-    # list fails closed to deny) or enforce the names on a CNI with FQDN
+    # list fails closed to deny, as long as co-selecting policies are also
+    # restricted — Kubernetes unions policies, so the generic collector
+    # policy in broad mode would still allow all) or enforce the names on
+    # a CNI with FQDN
     # policy, or mirror the endpoints in-cluster — see
     # docs/kubernetes/helm-routing-and-storage-values.md.
     # Default endpoints: gitClone github.com (the default

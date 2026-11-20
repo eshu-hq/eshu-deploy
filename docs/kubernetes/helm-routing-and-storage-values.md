@@ -180,7 +180,11 @@ activation pods and allows DNS plus four destinations: the git host (default
 `github.com`), the module proxy (default `proxy.golang.org`), the checksum
 database (default `sum.golang.org`), and the vulnerability database (default
 `vuln.go.dev`, `GOVULNDB` overrides it). Empty destination lists render no
-rule and stay denied; there is no allow-all rule.
+rule and stay denied — provided no other policy selecting these pods allows
+more: Kubernetes unions co-selecting policies, so the generic
+component-extension-collector policy must also run in `restricted` mode,
+or its broad allow-all still applies. There is no allow-all rule in the
+dedicated policy itself.
 
 Name-based rules need a CNI that enforces them. Vanilla Kubernetes
 NetworkPolicy matches destination IPs only, so the chart takes operator CIDR
