@@ -1,8 +1,9 @@
 # QA activation entries for the three scanner component images
-# (eshu-hq/eshu#9501). Each entry mirrors one reviewed eshu-side activation
-# contract row: digest-only seed image, the exact in-image seed binary the
-# Dockerfile ships, and the RequiredGrants set the host enforces. Apply with
-# `-f` on top of environment values; the chart default keeps
+# (eshu-hq/eshu#9501), plus a commented fourth skeleton for go-reachability
+# (eshu-hq/eshu-deploy#40). Each live entry mirrors one reviewed eshu-side
+# activation contract row: digest-only seed image, the exact in-image seed
+# binary the Dockerfile ships, and the RequiredGrants set the host enforces.
+# Apply with `-f` on top of environment values; the chart default keeps
 # `componentExtensionCollector.activations: []`, so unconfigured renders stay
 # byte-identical (the scanner contract test pins both directions).
 #
@@ -28,11 +29,72 @@ workflowCoordinator:
 componentExtensionCollector:
   enabled: true
   trustMode: allowlist
+  # TODO(eshu-hq/eshu-deploy#40): add eshu.scanner.go-reachability to
+  # allowIds when the fourth skeleton below goes live (the chart requires
+  # every activation componentId to be allowlisted).
   allowIds: eshu.scanner.image,eshu.scanner.sbom,eshu.scanner.osruntime
   allowPublishers: eshu-hq
   extensionEgressPolicyJSON: '{"mode":"restricted"}'
   pollInterval: 13s
   activations:
+    # TODO(eshu-hq/eshu-deploy#40): fourth activation (go-reachability).
+    # Uncomment and move below the live entries once eshu-scanner-worker
+    # publishes its first scanner-go-reachability release, and pin
+    # seed.image to that release's digest (repository@sha256:<64 hex>; tags
+    # are refused) in place of the placeholder below. Do not invent a
+    # digest: the chart refuses a render whose seed image is not
+    # digest-pinned, and core admission refuses an unpinned component. The
+    # entry inherits the sandbox the existing scanners use: allowlist trust
+    # with the extension egress policy in restricted mode above, plus the
+    # chart-global non-root read-only container sandbox.
+    # - instanceId: scanner-go-reachability
+    #   componentId: eshu.scanner.go-reachability
+    #   componentVersion: 0.1.0
+    #   mode: scheduled
+    #   seed:
+    #     image: ghcr.io/eshu-hq/scanner-go-reachability@sha256:<TODO: digest of the first scanner-worker go-reachability release>
+    #     command: ["/usr/local/bin/eshu-scanner-component-go-reachability", "seed"]
+    #     pullPolicy: IfNotPresent
+    #   host:
+    #     sourceSystem: scanner_worker
+    #     scope:
+    #       id: "go-reachability:qa"
+    #       kind: repository_source
+    #   config:
+    #     # Token sandbox: the scanner fetches only these clone hosts with
+    #     # the host-minted token (absent means github.com alone). Static
+    #     # targets and acceptance_unit_id are refused here: go-reachability
+    #     # takes its target from the host-derived claim, not from
+    #     # activation config.
+    #     allowed_clone_hosts: ["github.com"]
+    #   grants:
+    #     - kind: vulnerability.go_module_evidence
+    #       schemaVersions: ["1.0.0"]
+    #       scope: scanner_worker
+    #       expiresIn: 720h
+    #     - kind: vulnerability.go_call_reachability
+    #       schemaVersions: ["1.0.0"]
+    #       scope: scanner_worker
+    #       expiresIn: 720h
+    #     - kind: vulnerability.warning
+    #       schemaVersions: ["1.0.0"]
+    #       scope: scanner_worker
+    #       expiresIn: 720h
+    #     - kind: scanner_worker.warning
+    #       schemaVersions: ["1.0.0"]
+    #       scope: scanner_worker
+    #       expiresIn: 720h
+    #   # Size-limited scratch for checkouts, module cache, and build cache:
+    #   # the component prunes its caches past 4GiB, so 10Gi leaves headroom
+    #   # for one claim's checkout beside warm caches. The release follow-up
+    #   # points the scanner temp root at this mount.
+    #   extraVolumes:
+    #     - name: scan-scratch
+    #       emptyDir:
+    #         sizeLimit: 10Gi
+    #   extraVolumeMounts:
+    #     - name: scan-scratch
+    #       mountPath: /tmp/scan-scratch
     - instanceId: scanner-image
       componentId: eshu.scanner.image
       componentVersion: 0.1.0

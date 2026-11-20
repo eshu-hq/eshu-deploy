@@ -1,0 +1,35 @@
+{{/*
+Dedicated least-privilege egress for the go-reachability scanner activation
+(eshu-hq/eshu-deploy#40).
+
+The per-activation Deployments the component-extension collector renders get
+no NetworkPolicy from networkpolicy.yaml (that file covers the single
+legacy worker only), so this policy selects the go-reachability activation
+pods directly. Egress is DNS plus the four scanner destinations the operator
+populates under scannerGoReachability.egress; an empty destination list
+renders no rule and stays denied. There is deliberately no allow-all rule:
+vanilla Kubernetes NetworkPolicy cannot express the endpoint hostnames, so
+name enforcement needs a CNI with FQDN policy, or in-cluster mirrors behind
+the CIDR lists — see docs/kubernetes/helm-routing-and-storage-values.md.
+*/}}
+{{- if and .Values.networkPolicy.enabled .Values.scannerGoReachability.enabled }}
+{{- $instance := required "scannerGoReachability.instanceId is required when scannerGoReachability.enabled=true" .Values.scannerGoReachability.instanceId }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "eshu.fullname" . }}-cx-{{ $instance }}-egress
+  labels:
+    {{- include "eshu.labels" . | nindent 4 }}
+    app.kubernetes.io/component: component-extension-collector
+    eshu.dev/component-instance: {{ $instance | quote }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: component-extension-collector
+      eshu.dev/component-instance: {{ $instance | quote }}
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "eshu.scannerGoReachabilityEgress" (dict "root" .) | nindent 4 }}
+{{- end }}

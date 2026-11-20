@@ -122,6 +122,17 @@
 {{- end -}}
 {{- end -}}
 
+{{- define "eshu.scannerGoReachabilityEgress" -}}
+{{- $root := .root -}}
+{{- $egress := default dict $root.Values.scannerGoReachability.egress -}}
+{{- $https := list (dict "protocol" "TCP" "port" 443) -}}
+{{- include "eshu.networkPolicy.dnsRule" (dict "root" $root) }}
+{{ include "eshu.networkPolicy.configuredRule" (dict "cfg" (default dict $egress.gitClone) "defaultPorts" $https) }}
+{{ include "eshu.networkPolicy.configuredRule" (dict "cfg" (default dict $egress.moduleProxy) "defaultPorts" $https) }}
+{{ include "eshu.networkPolicy.configuredRule" (dict "cfg" (default dict $egress.checksumDB) "defaultPorts" $https) }}
+{{ include "eshu.networkPolicy.configuredRule" (dict "cfg" (default dict $egress.vulnDB) "defaultPorts" $https) }}
+{{- end -}}
+
 {{- define "eshu.networkPolicy.ingress" -}}
 {{- $root := .root -}}
 {{- $ports := list -}}

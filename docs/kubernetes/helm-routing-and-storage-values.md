@@ -168,6 +168,38 @@ proves all of these cases against the rendered chart: allowed provider, denied
 provider, missing policy, broad egress opt-in, and extension revocation;
 `scripts/test-verify-hosted-network-policy-egress.sh` self-tests the verifier.
 
+## Go-Reachability Scanner Egress
+
+The go-reachability scanner activation (`eshu.scanner.go-reachability`,
+`eshu-hq/eshu-deploy#40`) gets its own policy,
+`scannerGoReachability.enabled`, because the per-activation Deployments the
+component-extension collector renders are outside the generic workload
+policies in `networkpolicy.yaml`. The dedicated
+`networkpolicy-scanner-go-reachability.yaml` template selects only the
+activation pods and allows DNS plus four destinations: the git host (default
+`github.com`), the module proxy (default `proxy.golang.org`), the checksum
+database (default `sum.golang.org`), and the vulnerability database (default
+`vuln.go.dev`, `GOVULNDB` overrides it). Empty destination lists render no
+rule and stay denied; there is no allow-all rule.
+
+Name-based rules need a CNI that enforces them. Vanilla Kubernetes
+NetworkPolicy matches destination IPs only, so the chart takes operator CIDR
+lists under `scannerGoReachability.egress` and cannot express the endpoint
+hostnames themselves. Two ways to close that gap:
+
+- Run a CNI with FQDN egress policy (for example Cilium `toFQDNs`) and
+  translate the four endpoint names into the CNI-native policy beside this
+  chart.
+- Mirror the endpoints in-cluster (a git mirror, a module proxy mirror such
+  as Athens, a checksum/vuln-DB mirror) and point the operator CIDR lists at
+  the mirrors, keeping the scanner's `GOPROXY`/`GOSUMDB`/`GOVULNDB`
+  overrides on the same mirrors.
+
+Until eshu-scanner-worker publishes the first scanner-go-reachability
+release, the activation itself stays a commented skeleton in
+`helm/eshu/ci/scanner-activations.values.yaml` with no digest pinned; enable
+the policy only together with the live activation.
+
 OpenTelemetry defaults to disabled with OTLP/gRPC settings available under
 `observability.otel`. Prometheus defaults to disabled at `0.0.0.0:9464` with
 scrape path `/metrics`. `ServiceMonitor` resources render only when both
