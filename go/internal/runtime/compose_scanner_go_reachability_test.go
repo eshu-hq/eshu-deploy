@@ -121,14 +121,19 @@ func TestRemoteE2EComposeGoReachabilityFragmentStaysSkeleton(t *testing.T) {
 func TestRemoteE2EComposeGoReachabilityFragmentBuildContextsRooted(t *testing.T) {
 	t.Parallel()
 
-	raw := readRepositoryFile(t, deployRepositoryRoot(t), "compose/"+goReachabilityFragment)
-	for _, line := range strings.Split(raw, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "#") {
-			continue
-		}
-		if trimmed == "context: ." {
-			t.Fatalf("bare build context resolves to compose/ with no Dockerfile: %q", line)
+	for _, file := range []string{
+		"compose/" + goReachabilityFragment,
+		"compose/docker-compose.remote-e2e.runtime.yaml",
+	} {
+		raw := readRepositoryFile(t, deployRepositoryRoot(t), file)
+		for _, line := range strings.Split(raw, "\n") {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "#") {
+				continue
+			}
+			if trimmed == "context: ." {
+				t.Fatalf("%s: bare build context resolves to compose/ with no Dockerfile: %q", file, line)
+			}
 		}
 	}
 }
