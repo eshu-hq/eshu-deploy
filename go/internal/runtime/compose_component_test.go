@@ -6,6 +6,7 @@ package runtime
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -42,6 +43,25 @@ func TestDefaultComposeWiresComponentExtensionCollector(t *testing.T) {
 	assertComposeEnv(t, service, "ESHU_COMPONENT_ALLOW_PUBLISHERS", "${ESHU_COMPONENT_ALLOW_PUBLISHERS:-}")
 	assertComposeEnv(t, service, "ESHU_COMPONENT_COLLECTOR_INSTANCE_ID", "${ESHU_COMPONENT_COLLECTOR_INSTANCE_ID:-}")
 	assertComposeEnv(t, service, "ESHU_COMPONENT_COLLECTOR_SCOPE_KIND", "${ESHU_COMPONENT_COLLECTOR_SCOPE_KIND:-component}")
+}
+
+// TestOCIComponentExtensionFragmentBuildContextsRooted proves every build
+// context in the OCI scorecard fragment resolves from ESHU_REPO_ROOT: a bare
+// `context: .` renders to the compose/ directory, which has no Dockerfile,
+// so `up --build` fails with "failed to read dockerfile".
+func TestOCIComponentExtensionFragmentBuildContextsRooted(t *testing.T) {
+	t.Parallel()
+
+	raw := readRepositoryFile(t, deployRepositoryRoot(t), "compose/fragments/docker-compose.component-extension-oci.yaml")
+	for _, line := range strings.Split(raw, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if trimmed == "context: ." {
+			t.Fatalf("OCI fragment: bare build context resolves to compose/ with no Dockerfile: %q", line)
+		}
+	}
 }
 
 func assertComposeNamedVolume(t *testing.T, service composeService, source string, target string) {
