@@ -98,7 +98,12 @@ services:
     image: ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7
     restart: "no"
     user: "0:0"
-    command: ["/usr/local/bin/collector", "seed", "--dest", "/components/runtime/remote-e2e-vulnerability-intelligence", "--image-ref", "ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7"]
+    # NOTE: no binary path here — the image ENTRYPOINT already is the
+    # component binary, so command argv starts at the `seed` subcommand.
+    # Repeating the binary path makes it argv[1] and the binary falls
+    # through to Runner mode, failing on empty stdin (same shape as the
+    # go-reachability seed pre-fix).
+    command: ["seed", "--dest", "/components/runtime/remote-e2e-vulnerability-intelligence", "--image-ref", "ghcr.io/eshu-hq/eshu-collector-vulnerability-intelligence@sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7"]
     volumes:
       - vulnerability_intelligence_component_home:/components
 

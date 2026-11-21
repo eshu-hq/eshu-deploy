@@ -27,7 +27,7 @@ services:
     profiles:
       - component-extension-collector
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: examples/collector-extensions/scorecard/oci.worker.Dockerfile
       args:
         ESHU_IMAGE: eshu:local
@@ -66,7 +66,7 @@ services:
 
   component-extension-collector:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: examples/collector-extensions/scorecard/oci.worker.Dockerfile
       args:
         ESHU_IMAGE: eshu:local
