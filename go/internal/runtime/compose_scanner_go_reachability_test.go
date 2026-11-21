@@ -152,3 +152,27 @@ func TestRemoteE2EComposeGoReachabilityFragmentDeclaresProcessCommand(t *testing
 		t.Fatal("reconcile activation does not run the seeded runtime collector")
 	}
 }
+
+// TestRemoteE2EComposeGoReachabilityInstanceRegistered proves the
+// coordinator can plan the proof: the shared collector-instances anchor
+// carries a remote-e2e-go-reachability scanner_worker instance whose
+// activation document enables derive_from_go_modules with a
+// scanner_worker host. Without it the instance never reconciles, the
+// derive pass never runs, and no work item is ever planned.
+func TestRemoteE2EComposeGoReachabilityInstanceRegistered(t *testing.T) {
+	t.Parallel()
+
+	raw := readRepositoryFile(t, deployRepositoryRoot(t), "compose/docker-compose.remote-e2e.runtime.yaml")
+	for _, want := range []string{
+		`\"instance_id\": \"remote-e2e-go-reachability\"`,
+		`\"collector_kind\": \"scanner_worker\"`,
+		`\"derive_from_go_modules\"`,
+		`\"enabled\": true`,
+		`\"scan_interval\": \"60s\"`,
+		`\"kind\": \"scanner_worker\"`,
+	} {
+		if !strings.Contains(raw, want) {
+			t.Fatalf("collector anchor missing %s for the go-reachability proof instance", want)
+		}
+	}
+}
