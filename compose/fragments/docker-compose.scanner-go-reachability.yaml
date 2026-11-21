@@ -1,4 +1,4 @@
-# Skeleton overlay for the #10031 remote-e2e go-reachability driver
+# Overlay for the #10031 remote-e2e go-reachability driver
 # (eshu-hq/eshu-deploy#40, part of eshu-hq/eshu#10002).
 #
 # It mirrors the collector-vulnerability-intelligence seed/reconcile shape in
@@ -7,18 +7,14 @@
 # one-shot writes the activation file and grants the component, and the
 # worker runs the component-extension host over that home.
 #
-# TODO(eshu-hq/eshu-deploy#40): this fragment stays unwired until
-# eshu-scanner-worker publishes its first scanner-go-reachability release.
-# The seed image resolves from ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE, which
-# the driver must export as
-# ghcr.io/eshu-hq/scanner-go-reachability@sha256:<release digest> once the
-# release exists. The variable is required (no default, no invented digest),
-# so including this fragment early fails closed with a naming message
-# instead of pulling a floating tag. When the release lands, pin the digest
-# in the #10031 driver docs and replace the :? gate with the literal pin.
+# The seed image pins the v0.1.0 scanner-go-reachability release
+# (ghcr.io/eshu-hq/scanner-go-reachability@sha256:8e4059a2acbd020a761862a8196e25567b7119bb97ef42a228432c59f5e39284,
+# multi-arch): the literal pin replaces the release-gated
+# ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE variable now that the release
+# exists, so including this fragment pulls the reviewed digest with no
+# export step and no floating tag.
 #
-# Usage (from repo root, once the release exists):
-#   export ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE=ghcr.io/eshu-hq/scanner-go-reachability@sha256:<digest>
+# Usage (from repo root):
 #   docker compose \
 #     -f compose/docker-compose.remote-e2e.yaml \
 #     -f compose/fragments/docker-compose.scanner-go-reachability.yaml \
@@ -43,14 +39,14 @@ services:
   # land in the fresh root-owned named volume; the reconcile step hands
   # ownership to the runtime uid when the registry is ready.
   collector-go-reachability-seed:
-    image: ${ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE:?set ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE after the scanner-worker go-reachability release}
+    image: ghcr.io/eshu-hq/scanner-go-reachability@sha256:8e4059a2acbd020a761862a8196e25567b7119bb97ef42a228432c59f5e39284
     restart: "no"
     user: "0:0"
     # NOTE: no binary path here — the image ENTRYPOINT already is the
     # component binary, so command argv starts at the `seed` subcommand.
     # Repeating the binary path makes it argv[1] and the binary falls
     # through to Runner mode, failing on empty stdin.
-    command: ["seed", "--dest", "/components/runtime/remote-e2e-go-reachability", "--image-ref", "${ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE:?set ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE after the scanner-worker go-reachability release}"]
+    command: ["seed", "--dest", "/components/runtime/remote-e2e-go-reachability", "--image-ref", "ghcr.io/eshu-hq/scanner-go-reachability@sha256:8e4059a2acbd020a761862a8196e25567b7119bb97ef42a228432c59f5e39284"]
     volumes:
       - go_reachability_component_home:/components
 
