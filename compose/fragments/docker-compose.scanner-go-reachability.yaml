@@ -88,10 +88,13 @@ services:
         cat > "$${CONFIG_PATH}" <<'ACTIVATION'
         config:
           allowed_clone_hosts: ["github.com"]
+          derive_from_go_modules:
+            enabled: true
+            scan_interval: 60s
         host:
           scope:
             id: "go-reachability:remote-e2e"
-            kind: repository_source
+            kind: scanner_worker
           sourceSystem: scanner_worker
         process:
           # The seeded runtime collector runs through the process adapter
