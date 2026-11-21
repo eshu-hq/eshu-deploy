@@ -941,11 +941,11 @@ componentExtensionCollector:
 
 scannerGoReachability:
   # Dedicated least-privilege egress for the go-reachability scanner
-  # activation (eshu-hq/eshu-deploy#40). Disabled until eshu-scanner-worker
-  # publishes its first scanner-go-reachability release: enabling renders
-  # the NetworkPolicy below, while the activation itself stays a commented
-  # skeleton in helm/eshu/ci/scanner-activations.values.yaml until the seed
-  # image digest exists to pin. Never ship allow-all egress as done.
+  # activation (eshu-hq/eshu-deploy#40). Disabled by default: enabling
+  # renders the NetworkPolicy below. The activation itself went live with
+  # the v0.1.0 scanner-worker release and is pinned in
+  # helm/eshu/ci/scanner-activations.values.yaml; enable the policy only
+  # together with that live activation. Never ship allow-all egress as done.
   enabled: false
   # Must match the activation instanceId in the scanner example values; the
   # policy selects the activation pods by this label.

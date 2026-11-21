@@ -199,10 +199,9 @@ hostnames themselves. Two ways to close that gap:
   the mirrors, keeping the scanner's `GOPROXY`/`GOSUMDB`/`GOVULNDB`
   overrides on the same mirrors.
 
-Until eshu-scanner-worker publishes the first scanner-go-reachability
-release, the activation itself stays a commented skeleton in
-`helm/eshu/ci/scanner-activations.values.yaml` with no digest pinned; enable
-the policy only together with the live activation.
+Since the v0.1.0 scanner-worker release, the activation itself is live in
+`helm/eshu/ci/scanner-activations.values.yaml` with that release's digest
+pinned; enable the policy only together with the live activation.
 
 OpenTelemetry defaults to disabled with OTLP/gRPC settings available under
 `observability.otel`. Prometheus defaults to disabled at `0.0.0.0:9464` with

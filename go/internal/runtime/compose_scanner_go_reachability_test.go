@@ -9,12 +9,10 @@ import (
 	"testing"
 )
 
-// The #10031 remote-e2e driver needs a go-reachability compose shape before
-// eshu-scanner-worker publishes its first go-reachability release
-// (eshu-hq/eshu-deploy#40). The fragment below stays a skeleton: the seed
-// image resolves from a required environment variable so no digest is
-// invented, and the reconcile grants mirror the scanner RequiredGrants set
-// the eshu core admission enforces.
+// The #10031 remote-e2e driver runs go-reachability off the v0.1.0
+// scanner-worker release (eshu-hq/eshu-deploy#40). The fragment below pins
+// that release's digest literally, and the reconcile grants mirror the
+// scanner RequiredGrants set the eshu core admission enforces.
 
 const (
 	goReachabilityFragment           = "fragments/docker-compose.scanner-go-reachability.yaml"
@@ -22,8 +20,9 @@ const (
 	goReachabilitySeedService        = "collector-go-reachability-seed"
 	goReachabilityReconcileService   = "collector-go-reachability-reconcile"
 	goReachabilityFragmentInstanceID = "remote-e2e-go-reachability"
-	goReachabilitySeedImageEnv       = "${ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE:?set ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE after the scanner-worker go-reachability release}"
-	goReachabilityFragmentTODO       = "TODO(eshu-hq/eshu-deploy#40)"
+	// goReachabilitySeedImage pins the v0.1.0 multi-arch release,
+	// verified against the ghcr.io manifest.
+	goReachabilitySeedImage = "ghcr.io/eshu-hq/scanner-go-reachability@sha256:8e4059a2acbd020a761862a8196e25567b7119bb97ef42a228432c59f5e39284"
 )
 
 // TestRemoteE2EComposeGoReachabilityFragmentRunsExtensionHost proves the
@@ -51,11 +50,8 @@ func TestRemoteE2EComposeGoReachabilityFragmentRunsExtensionHost(t *testing.T) {
 	assertComposeDependencyCondition(t, worker, goReachabilityReconcileService, "service_completed_successfully")
 
 	seed := requireComposeService(t, doc, goReachabilitySeedService)
-	if seed.Image != goReachabilitySeedImageEnv {
-		t.Fatalf("seed image = %q, want the required release-gated env %q", seed.Image, goReachabilitySeedImageEnv)
-	}
-	if strings.Contains(seed.Image, "@sha256:") {
-		t.Fatalf("seed image pins a digest before the release exists: %q", seed.Image)
+	if seed.Image != goReachabilitySeedImage {
+		t.Fatalf("seed image = %q, want the pinned v0.1.0 release %q", seed.Image, goReachabilitySeedImage)
 	}
 	// The image entrypoint already is the component binary, so argv must
 	// start at the seed subcommand: repeating the binary path shifts it
@@ -89,25 +85,37 @@ func TestRemoteE2EComposeGoReachabilityFragmentRunsExtensionHost(t *testing.T) {
 	assertComposeScriptContains(t, reconcile, "allowed_clone_hosts")
 }
 
-// TestRemoteE2EComposeGoReachabilityFragmentStaysSkeleton proves the fragment
-// names its release gate and ships no invented digest anywhere.
-func TestRemoteE2EComposeGoReachabilityFragmentStaysSkeleton(t *testing.T) {
+// TestRemoteE2EComposeGoReachabilityFragmentPinsRelease proves the fragment
+// pulls the reviewed release with no export step and no floating tag: the
+// seed image and --image-ref pin the same v0.1.0 digest, and no release
+// gate or placeholder remains.
+func TestRemoteE2EComposeGoReachabilityFragmentPinsRelease(t *testing.T) {
 	t.Parallel()
 
 	raw := readRepositoryFile(t, deployRepositoryRoot(t), "compose/"+goReachabilityFragment)
-	if !strings.Contains(raw, goReachabilityFragmentTODO) {
-		t.Fatalf("go-reachability fragment misses the skeleton marker %q", goReachabilityFragmentTODO)
+	if strings.Contains(raw, "TODO(eshu-hq/eshu-deploy#40)") {
+		t.Fatal("go-reachability fragment still carries the release-gate marker, want the literal pin")
 	}
-	if !strings.Contains(raw, "scanner-worker") {
-		t.Fatalf("go-reachability fragment does not name the release it waits on")
+	for _, line := range strings.Split(raw, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			continue
+		}
+		if strings.Contains(line, "ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE") {
+			t.Fatalf("go-reachability fragment still resolves the seed image from the environment: %q", line)
+		}
+	}
+	if got := strings.Count(raw, "scanner-go-reachability@sha256:"); got != 3 {
+		t.Fatalf("fragment pins %d go-reachability digest refs, want 3 (comment, image, --image-ref)", got)
 	}
 	for _, line := range strings.Split(raw, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "#") {
 			continue
 		}
-		if strings.Contains(line, "scanner-go-reachability@sha256:") {
-			t.Fatalf("fragment pins a go-reachability digest before the release exists: %q", line)
+		for _, ref := range strings.FieldsFunc(line, func(r rune) bool { return r == '"' || r == '\'' || r == ' ' || r == ',' || r == '[' || r == ']' }) {
+			if strings.Contains(ref, "scanner-go-reachability@sha256:") && ref != goReachabilitySeedImage {
+				t.Fatalf("fragment pins a non-release digest: %q", ref)
+			}
 		}
 	}
 }

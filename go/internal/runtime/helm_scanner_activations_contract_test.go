@@ -21,16 +21,20 @@ import (
 // analyzers in QA.
 //
 // Current pins: eshu Scanner-Publish-SHA 17e42456aaa3a411cb429babd3dcf2b63bd07941
-// (docker-publish run 41099864459, merged by eshu-hq/eshu#9675). This test
+// (docker-publish run 41099864459, merged by eshu-hq/eshu#9675), plus the
+// v0.1.0 go-reachability multi-arch release
+// (sha256:8e4059a2acbd020a761862a8196e25567b7119bb97ef42a228432c59f5e39284,
+// digest verified against the ghcr.io manifest). This test
 // compares the values file to these constants only; it does not read the
 // eshu manifest, so a republish still needs this bump by hand.
 const (
-	scannerImageDigest     = "sha256:2c9269e917dbfbf4116a1b9550694fc18238c8a3e6847df98af37d1b7b423815"
-	scannerSBOMDigest      = "sha256:2d3b72aa4850ee818af1e652343e497e45c80bdd9c82eaae11da9e6b61ee43da"
-	scannerOSRuntimeDigest = "sha256:6ff09b67b40741b5ed2d1e7674163124a7372d7b76ecfdd790c33dc955e2b574"
+	scannerImageDigest          = "sha256:2c9269e917dbfbf4116a1b9550694fc18238c8a3e6847df98af37d1b7b423815"
+	scannerSBOMDigest           = "sha256:2d3b72aa4850ee818af1e652343e497e45c80bdd9c82eaae11da9e6b61ee43da"
+	scannerOSRuntimeDigest      = "sha256:6ff09b67b40741b5ed2d1e7674163124a7372d7b76ecfdd790c33dc955e2b574"
+	scannerGoReachabilityDigest = "sha256:8e4059a2acbd020a761862a8196e25567b7119bb97ef42a228432c59f5e39284"
 )
 
-var scannerSeedImagePattern = regexp.MustCompile(`^ghcr\.io/eshu-hq/scanner-[a-z]+@sha256:[0-9a-f]{64}$`)
+var scannerSeedImagePattern = regexp.MustCompile(`^ghcr\.io/eshu-hq/scanner-[a-z-]+@sha256:[0-9a-f]{64}$`)
 
 type scannerActivationCase struct {
 	instance    string
@@ -80,9 +84,10 @@ func renderHelmRaw(t *testing.T, args ...string) []byte {
 }
 
 // TestHelmScannerActivationsRenderSeedDeployments proves the #9501
-// acceptance row: the three scanner activation entries render one worker
-// Deployment each, and every seed init container runs the digest-only seed
-// image with the in-image seed binary the scanner Dockerfiles ship.
+// acceptance row plus the go-reachability follow-up: the four scanner
+// activation entries render one worker Deployment each, and every seed init
+// container runs the digest-only seed image with the in-image seed binary
+// the scanner Dockerfiles ship.
 func TestHelmScannerActivationsRenderSeedDeployments(t *testing.T) {
 	t.Parallel()
 
@@ -113,6 +118,15 @@ func TestHelmScannerActivationsRenderSeedDeployments(t *testing.T) {
 			grants: []string{
 				"--kind 'vulnerability.os_package' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
 				"--kind 'vulnerability.warning' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+			},
+		},
+		{
+			instance: "scanner-go-reachability", componentID: "eshu.scanner.go-reachability", binary: "eshu-scanner-component-go-reachability", image: "ghcr.io/eshu-hq/scanner-go-reachability@" + scannerGoReachabilityDigest,
+			grants: []string{
+				"--kind 'vulnerability.go_module_evidence' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+				"--kind 'vulnerability.go_call_reachability' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+				"--kind 'vulnerability.warning' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
+				"--kind 'scanner_worker.warning' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'",
 			},
 		},
 	}
@@ -172,7 +186,7 @@ func TestHelmScannerActivationsConfigOmitsProcessArgs(t *testing.T) {
 	manifests := renderScannerActivationsQA(t)
 	configMap := requireHelmManifest(t, manifests, "ConfigMap", "eshu-component-activations")
 	data := helmMap(configMap["data"])
-	for _, instance := range []string{"scanner-image", "scanner-sbom", "scanner-osruntime"} {
+	for _, instance := range []string{"scanner-image", "scanner-sbom", "scanner-osruntime", "scanner-go-reachability"} {
 		body := helmString(data[instance+".yaml"])
 		if body == "" {
 			t.Fatalf("activation file %s.yaml missing from the activations ConfigMap", instance)
