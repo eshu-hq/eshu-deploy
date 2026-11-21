@@ -46,7 +46,11 @@ services:
     image: ${ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE:?set ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE after the scanner-worker go-reachability release}
     restart: "no"
     user: "0:0"
-    command: ["/usr/local/bin/eshu-scanner-component-go-reachability", "seed", "--dest", "/components/runtime/remote-e2e-go-reachability", "--image-ref", "${ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE:?set ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE after the scanner-worker go-reachability release}"]
+    # NOTE: no binary path here — the image ENTRYPOINT already is the
+    # component binary, so command argv starts at the `seed` subcommand.
+    # Repeating the binary path makes it argv[1] and the binary falls
+    # through to Runner mode, failing on empty stdin.
+    command: ["seed", "--dest", "/components/runtime/remote-e2e-go-reachability", "--image-ref", "${ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE:?set ESHU_SCANNER_GOREACHABILITY_SEED_IMAGE after the scanner-worker go-reachability release}"]
     volumes:
       - go_reachability_component_home:/components
 
@@ -55,7 +59,7 @@ services:
   # starts only after this exits 0.
   collector-go-reachability-reconcile:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: "no"
     user: "0:0"
@@ -89,6 +93,13 @@ services:
             id: "go-reachability:remote-e2e"
             kind: repository_source
           sourceSystem: scanner_worker
+        process:
+          # The seeded runtime collector runs through the process adapter
+          # over collector-sdk/v1alpha3 stdio (no extra argv: the binary
+          # dispatches `seed` only as argv[1], anything else runs the
+          # stateless call loop). Path is the seed --dest runtime dir.
+          command: /components/runtime/remote-e2e-go-reachability/collector
+          stdout_limit_bytes: 67108864
         ACTIVATION
         eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.go_module_evidence' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'
         eshu component grant "$${COMPONENT_ID}" --component-home "$${home}" --version "$${COMPONENT_VERSION}" --kind 'vulnerability.go_call_reachability' --schema-version '1.0.0' --scope 'scanner_worker' --expires-in '720h'
@@ -118,7 +129,7 @@ services:
   # remote-e2e stack.
   collector-go-reachability:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-collector-component-extension"]

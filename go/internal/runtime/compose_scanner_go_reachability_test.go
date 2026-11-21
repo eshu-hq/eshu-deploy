@@ -57,8 +57,13 @@ func TestRemoteE2EComposeGoReachabilityFragmentRunsExtensionHost(t *testing.T) {
 	if strings.Contains(seed.Image, "@sha256:") {
 		t.Fatalf("seed image pins a digest before the release exists: %q", seed.Image)
 	}
-	assertComposeScriptContains(t, seed, "/usr/local/bin/eshu-scanner-component-go-reachability")
-	assertComposeScriptContains(t, seed, "seed")
+	// The image entrypoint already is the component binary, so argv must
+	// start at the seed subcommand: repeating the binary path shifts it
+	// to argv[1] and the binary falls through to Runner mode on empty
+	// stdin instead of seeding (proven by the live bring-up).
+	if got := fmt.Sprint(seed.Command); !strings.HasPrefix(got, "[seed ") {
+		t.Fatalf("seed command = %s, want argv starting at the seed subcommand", got)
+	}
 	assertComposeScriptContains(t, seed, "--image-ref")
 	assertComposeNamedVolume(t, seed, "go_reachability_component_home", "/components")
 	if seed.User != "0:0" {
@@ -104,5 +109,46 @@ func TestRemoteE2EComposeGoReachabilityFragmentStaysSkeleton(t *testing.T) {
 		if strings.Contains(line, "scanner-go-reachability@sha256:") {
 			t.Fatalf("fragment pins a go-reachability digest before the release exists: %q", line)
 		}
+	}
+}
+
+// TestRemoteE2EComposeGoReachabilityFragmentBuildContextsRooted proves every
+// build context in the fragment resolves from ESHU_REPO_ROOT: a bare
+// `context: .` renders to the compose/ directory, which has no Dockerfile,
+// so `up --build` fails with "failed to read dockerfile" (proven live on
+// the Wave-3 bring-up). compose config --quiet renders without checking
+// Dockerfile existence, so only this assertion guards the regression.
+func TestRemoteE2EComposeGoReachabilityFragmentBuildContextsRooted(t *testing.T) {
+	t.Parallel()
+
+	for _, file := range []string{
+		"compose/" + goReachabilityFragment,
+		"compose/docker-compose.remote-e2e.runtime.yaml",
+	} {
+		raw := readRepositoryFile(t, deployRepositoryRoot(t), file)
+		for _, line := range strings.Split(raw, "\n") {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "#") {
+				continue
+			}
+			if trimmed == "context: ." {
+				t.Fatalf("%s: bare build context resolves to compose/ with no Dockerfile: %q", file, line)
+			}
+		}
+	}
+}
+
+// TestRemoteE2EComposeGoReachabilityFragmentDeclaresProcessCommand proves the
+// reconcile activation carries the extension host's required process.command:
+// without it the worker crash-loops at startup and no claim can run.
+func TestRemoteE2EComposeGoReachabilityFragmentDeclaresProcessCommand(t *testing.T) {
+	t.Parallel()
+
+	raw := readRepositoryFile(t, deployRepositoryRoot(t), "compose/"+goReachabilityFragment)
+	if !strings.Contains(raw, "process:") {
+		t.Fatal("reconcile activation has no process: block for the extension host")
+	}
+	if !strings.Contains(raw, "command: /components/runtime/remote-e2e-go-reachability/collector") {
+		t.Fatal("reconcile activation does not run the seeded runtime collector")
 	}
 }

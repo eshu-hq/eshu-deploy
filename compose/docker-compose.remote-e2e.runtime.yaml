@@ -79,7 +79,7 @@ services:
 
   collector-security-alerts-preflight:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: "no"
     command:
@@ -92,7 +92,7 @@ services:
 
   workflow-coordinator:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-workflow-coordinator"]
@@ -124,7 +124,7 @@ services:
 
   collector-terraform-state:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     # The terraform-state binary ships in the eshu-collector-terraform-state satellite image, not the
@@ -154,7 +154,7 @@ services:
 
   collector-oci-registry:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-collector-oci-registry"]
@@ -180,7 +180,7 @@ services:
 
   collector-package-registry:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-collector-package-registry"]
@@ -210,7 +210,7 @@ services:
     # the seed and reconcile one-shots in docker-compose.remote-e2e.seed.yaml
     # put the digest-pinned satellite in the component home first.
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-collector-component-extension"]
@@ -253,7 +253,7 @@ services:
 
   collector-sbom-attestation:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-collector-sbom-attestation"]
@@ -281,7 +281,7 @@ services:
 
   collector-security-alerts:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-collector-security-alerts"]
@@ -308,7 +308,7 @@ services:
 
   scanner-worker:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     command: ["/usr/local/bin/eshu-scanner-worker"]
@@ -343,7 +343,7 @@ services:
 
   collector-aws-cloud:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     restart: on-failure
     # The aws-cloud binary ships in the eshu-collector-aws-cloud satellite image, not the
@@ -372,7 +372,7 @@ services:
 
   collector-pagerduty:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     profiles:
       - pagerduty
@@ -401,7 +401,7 @@ services:
 
   collector-jira:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     profiles:
       - jira
@@ -453,7 +453,7 @@ services:
 
   collector-confluence:
     build:
-      context: .
+      context: ${ESHU_REPO_ROOT:-.}
       dockerfile: Dockerfile
     profiles:
       - confluence
