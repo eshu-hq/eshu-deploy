@@ -42,8 +42,10 @@ database, or secrets. For code changes, head to
 
 ## Quickstart
 
-On your laptop, you need Docker and a checkout of `eshu`, because Compose
-builds from its `Dockerfile`:
+Just evaluating Eshu on a laptop? The fastest zero-credential path is
+`eshu demo up` in [Demo mode](https://github.com/eshu-hq/eshu/blob/main/docs/public/getting-started/demo-mode.md). When you want the full
+Docker Compose stack locally, you need Docker and a checkout of `eshu`,
+because Compose builds from its `Dockerfile`:
 
 ```bash
 export ESHU_REPO_ROOT="/path/to/eshu"
@@ -59,8 +61,8 @@ rest of the way, including how to tell whether indexing finished.
 
 For a shared service, read [Prerequisites](docs/kubernetes/prerequisites.md)
 and [Storage](docs/kubernetes/storage.md) first. You'll need a Postgres
-database and a graph backend ready, because the chart installs neither for
-you. Then follow the [Helm Quickstart](docs/kubernetes/helm-quickstart.md).
+database and a Neo4j graph backend ready (Neo4j is the supported canonical
+deployed graph backend), because the chart installs neither for you. Then follow the [Helm Quickstart](docs/kubernetes/helm-quickstart.md).
 It covers the secrets and values you'll write. Render before you install:
 
 ```bash
@@ -102,9 +104,11 @@ Compose and Kubernetes shapes in plain words,
 | Check tested version pairs | [Compatibility Matrix](docs/compatibility-matrix.md) |
 | See where these files came from | [Seed Provenance](docs/seed-provenance.md) |
 
-Once Eshu is running, its own
-[documentation index](https://github.com/eshu-hq/eshu/blob/main/docs/public/index.md)
-is your next stop.
+Once Eshu is running, head to
+[Start Here](https://github.com/eshu-hq/eshu/blob/main/docs/public/start-here.md), browse the 31-repo
+[Repository Map](https://github.com/eshu-hq/eshu/blob/main/REPOSITORIES.md), or check
+[Collector and Reducer Readiness](https://github.com/eshu-hq/eshu/blob/main/docs/public/reference/collector-reducer-readiness.md) before enabling
+opt-in collectors.
 
 ## Contributing, security, and license
 
