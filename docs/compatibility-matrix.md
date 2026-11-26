@@ -34,7 +34,7 @@ per `eshu-hq/eshu#8871`) is superseded.
 | Vulnerability-intelligence collector (digest-pinned) | `sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7` | `sha256:9807247fc195caec413c2a908d2afb3ffc6b54430bf9bb4e79c170fdde12d0b7` |
 | Postgres | `postgres:18-alpine` | `postgres:18-alpine` |
 | Neo4j (compose default) | `neo4j:2026-community@sha256:eabfbb042bdaca2fd5e1950db1329b22c794eee80f0eacc4e7a729d44b2e863f` | `neo4j:2026-community@sha256:eabfbb042bdaca2fd5e1950db1329b22c794eee80f0eacc4e7a729d44b2e863f` |
-| NornicDB (`nornicdb-amd64-cpu`) | `fix-500-e022384c@sha256:74a8ed7b36f37bdd1a7e32d8bc6aa3fa88908b7207bfa6568567ab94e4a4b3b1` | `fix-500-e022384c@sha256:74a8ed7b36f37bdd1a7e32d8bc6aa3fa88908b7207bfa6568567ab94e4a4b3b1` |
+| NornicDB (`nornicdb-amd64-cpu`) | `v1.5.2-hotfix@sha256:ece888de07a150a353f8fbf4755bb92f1126b3878828b81b964fcefaec956ac5` | `v1.5.2-hotfix@sha256:ece888de07a150a353f8fbf4755bb92f1126b3878828b81b964fcefaec956ac5` |
 
 Credential handling: ArgoCD overlays carry secret-reference examples only,
 no credential material; claim-driven collectors mount redaction keys at
