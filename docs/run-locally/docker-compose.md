@@ -169,10 +169,9 @@ or document id to logs or metric labels.
 
 ### Immutable NornicDB default
 
-The default Compose NornicDB service uses the eshu-hq self-built multi-architecture image
-`ghcr.io/eshu-hq/nornicdb-amd64-cpu:fix-500-e022384c@sha256:74a8ed7b36f37bdd1a7e32d8bc6aa3fa88908b7207bfa6568567ab94e4a4b3b1`.
-That exact artifact is upstream main at the Close-versus-commit fix (orneryd/NornicDB#501, with the numID counter floor
-#498 for the restart cell, #6162) plus the ORDER BY key fix from orneryd/NornicDB#502 (not yet merged upstream). The
+The default Compose NornicDB service uses the eshu-hq linux/amd64 image
+`ghcr.io/eshu-hq/nornicdb-amd64-cpu:v1.5.2-hotfix@sha256:ece888de07a150a353f8fbf4755bb92f1126b3878828b81b964fcefaec956ac5`.
+That exact artifact is upstream main at the v1.5.2-hotfix release commit. The
 default pull policy `missing` downloads the immutable artifact once and reuses
 it without requiring registry access on every start.
 
@@ -184,7 +183,7 @@ stanza; build a local comparison image separately, then select it with
 `NORNICDB_IMAGE=<local-tag> NORNICDB_PULL_POLICY=never`.
 
 The default pins `NORNICDB_PLATFORM=linux/amd64`, the only platform with live
-v1.3.3 proof. Use a separate Compose project and fresh graph volume for unsupported arm64 experiments.
+v1.5.2-hotfix proof. Use a separate Compose project and fresh graph volume for unsupported arm64 experiments.
 
 Normal `docker compose up --build` builds the Eshu services and pulls NornicDB
 only when its immutable image is absent. To cache the backend before starting:
@@ -198,11 +197,11 @@ Confirm the configured digest and the backend's reported version before treating
 the stack as evidence:
 
 ```bash
-docker compose config --images | rg 'nornicdb-amd64-cpu:fix-500-e022384c@sha256:74a8ed7b'
+docker compose config --images | rg 'nornicdb-amd64-cpu:v1.5.2-hotfix@sha256:ece888de'
 docker compose exec nornicdb /app/nornicdb version
 ```
 
-The version command reports `NornicDB v1.3.3`: upstream's v1.3.2 tag retained a stale embedded VERSION file reporting `NornicDB v1.3.1`, and v1.3.3 corrects it. Verify the fix-500-e022384c tag and immutable
+The version command reports `NornicDB v1.5.2-hotfix`. Verify the v1.5.2-hotfix tag and immutable
 digest above; the binary string alone cannot identify this release. The pinned image likewise carries no OCI source-revision label, so the tag plus digest,
 selected platform child, and honest binary self-report form the provenance contract.
 
